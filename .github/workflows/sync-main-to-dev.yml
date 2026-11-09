@@ -1,0 +1,43 @@
+
+name: Sync Main to Development Branches
+
+on:
+  push:
+    branches:
+      - main
+
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  sync-branches:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Sync main to development branches
+        run: |
+          git fetch origin
+
+          for branch in dev/felix dev/mikey dev/lopez
+          do
+            echo "Syncing main into $branch"
+
+            git switch -C "$branch" "origin/$branch"
+
+            git merge origin/main --no-edit
+
+            git push origin "$branch"
+          done
