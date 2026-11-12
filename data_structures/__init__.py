@@ -1,0 +1,4 @@
+from data_structures.student_dictionary import StudentDictionary
+from data_structures.course_dictionary import CourseDictionary
+from data_structures.enrollment_set import EnrollmentSet
+from data_structures.enrollment_list import EnrollmentList
