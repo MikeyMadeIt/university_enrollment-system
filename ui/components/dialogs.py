@@ -234,19 +234,21 @@ class ViewStudentDialog:
 
 #for testing
 
-if __name__ == "__main__":
-    root = tk.Tk()
-    root.geometry("800x500")
+#testing code for ViewStudentDialog
+#if __name__ == "__main__":
+#    root = tk.Tk()
+#    root.geometry("800x500")
 
-    ViewStudentDialog(
-        root,
-        "2026-001",
-        "Lopez, Dhan Paul",
-        {"CS101", "CS102", "CS103", "CS104", "CS105", "CS106", "CS107", "CS108", "CS109",}
-    )
+#    ViewStudentDialog(
+#        root,
+#        "2026-001",
+#        "Lopez, Dhan Paul",
+#        {"CS101", "CS102", "CS103", "CS104", "CS105", "CS106", "CS107", "CS108", "CS109",}
+#    )
 
-    root.mainloop()
+#    root.mainloop()
 
+#testing code for StudentRegistrationDialog
 #if __name__ == "__main__":
 #    root = tk.Tk()
 #    root.geometry("800x500")
