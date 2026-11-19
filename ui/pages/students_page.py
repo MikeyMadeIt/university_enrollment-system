@@ -1,6 +1,10 @@
 import tkinter as tk
 from tkinter import ttk
-from ui.components.dialogs import StudentRegistrationDialog
+
+from ui.components.dialogs import (
+    StudentRegistrationDialog,
+    ViewStudentDialog
+)
 
 
 class StudentsPage:
@@ -42,7 +46,7 @@ class StudentsPage:
         subtitle.pack(anchor="w", padx=25)
 
     def create_search_bar(self):
-        #for search bar and button
+        # Search bar and button container
         search_frame = tk.Frame(
             self.frame,
             bg="#F1F3F5"
@@ -103,7 +107,7 @@ class StudentsPage:
             pady=(0, 25)
         )
 
-        #title
+        # Table title
         table_title = tk.Label(
             table_frame,
             text="Student Records",
@@ -117,11 +121,10 @@ class StudentsPage:
             pady=15
         )
 
-        #columns
+        # Columns
         columns = (
             "student_id",
-            "name",
-            "completed_courses"
+            "name"
         )
 
         self.student_tree = ttk.Treeview(
@@ -130,66 +133,60 @@ class StudentsPage:
             show="headings"
         )
 
-        #sColumn headings
+        # Column headings
         self.student_tree.heading(
             "student_id",
             text="Student ID"
         )
+
         self.student_tree.heading(
             "name",
             text="Student Name"
         )
-        self.student_tree.heading(
-            "completed_courses",
-            text="Completed Courses"
-        )
 
-        # Column widths
+        # Column widths and alignment
         self.student_tree.column(
             "student_id",
-            width=120,
+            width=150,
             anchor="center"
         )
+
         self.student_tree.column(
             "name",
-            width=200,
-            anchor="center"
-        )
-        self.student_tree.column(
-            "completed_courses",
             width=250,
-            anchor = "center"
+            anchor="center"
         )
 
         # Display student records
         for student_id, details in self.students.items():
-            completed = details["completed_courses"]
-
-            completed_text = ", ".join(sorted(completed)) if completed else "None"
 
             self.student_tree.insert(
                 "",
                 "end",
                 values=(
                     student_id,
-                    details["name"],
-                    completed_text
+                    details["name"]
                 )
             )
 
+        # Create vertical scrollbar
+        scrollbar = ttk.Scrollbar(
+            table_frame,
+            orient="vertical",
+            command=self.student_tree.yview
+        )
+
+        self.student_tree.configure(
+            yscrollcommand=scrollbar.set
+        )
+
+        # Display table
         self.student_tree.pack(
             side="left",
             fill="both",
             expand=True,
             padx=(15, 0),
             pady=(0, 15)
-        )
-
-        #scrollbar
-        scrollbar = ttk.Scrollbar(
-            table_frame,
-            orient="vertical",
-            command=self.student_tree.yview
         )
 
         scrollbar.pack(
@@ -199,12 +196,48 @@ class StudentsPage:
             pady=(0, 15)
         )
 
-        self.student_tree.configure(
-            yscrollcommand=scrollbar.set
+        # Double-click to view student details
+        self.student_tree.bind(
+            "<Double-1>",
+            self.open_view_dialog
         )
 
     def open_registration_dialog(self):
-        StudentRegistrationDialog(self.frame.winfo_toplevel())
+        StudentRegistrationDialog(
+            self.frame.winfo_toplevel()
+        )
+
+    def open_view_dialog(self, event):
+
+        # Get selected row
+        selected_item = self.student_tree.selection()
+
+        if not selected_item:
+            return
+
+        # Get student ID from selected row
+        values = self.student_tree.item(
+            selected_item[0],
+            "values"
+        )
+
+        student_id = values[0]
+
+        # Retrieve student information
+        student = self.students.get(student_id)
+
+        if student is None:
+            return
+
+        student_name = student["name"]
+        completed_courses = student["completed_courses"]
+
+        ViewStudentDialog(
+            self.frame.winfo_toplevel(),
+            student_id,
+            student_name,
+            completed_courses
+        )
 
     #placeholder data
     def load_placeholder_students(self):
