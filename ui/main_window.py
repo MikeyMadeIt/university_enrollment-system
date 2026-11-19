@@ -3,6 +3,7 @@ import tkinter as tk
 from .components.header import Header
 from .components.sidebar import Sidebar
 from .pages.dashboard import Dashboard
+from .pages.students_page import StudentsPage
 
 class MainWindow:
 
@@ -65,3 +66,6 @@ class MainWindow:
 
         if page_name == "Dashboard":
             Dashboard(self.page_container)
+
+        elif page_name == "Students":
+            StudentsPage(self.page_container)
