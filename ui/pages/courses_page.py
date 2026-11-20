@@ -2,6 +2,11 @@
 import tkinter as tk
 from tkinter import ttk
 
+from ui.components.dialogs import (
+    AddCourseDialog,
+    EnrolledStudentsDialog
+)
+
 
 class CoursesPage:
 
@@ -16,6 +21,8 @@ class CoursesPage:
         self.frame.pack(fill="both", expand=True)
 
         self.load_placeholder_courses()
+        self.load_placeholder_students()
+
         self.create_header()
         self.create_search_bar()
         self.create_course_table()
@@ -42,7 +49,6 @@ class CoursesPage:
 
     def create_search_bar(self):
 
-        # Search bar and button container
         search_frame = tk.Frame(
             self.frame,
             bg="#F1F3F5"
@@ -70,10 +76,10 @@ class CoursesPage:
 
         self.search_entry.insert(
             0,
-            "Search by course code or name"
+            "Search by course code"
         )
 
-        # Add Course button
+        #Course button
         add_button = tk.Button(
             search_frame,
             text="+ Add Course",
@@ -85,7 +91,8 @@ class CoursesPage:
             relief="flat",
             padx=15,
             pady=8,
-            cursor="hand2"
+            cursor="hand2",
+            command=self.open_add_course_dialog
         )
         add_button.pack(side="right")
 
@@ -130,21 +137,57 @@ class CoursesPage:
             show="headings"
         )
 
-        self.course_tree.heading("course_code", text="Course Code")
-        self.course_tree.heading("course_name", text="Course Name")
-        self.course_tree.heading("capacity", text="Capacity")
-        self.course_tree.heading("enrolled", text="Enrolled")
+        self.course_tree.heading(
+            "course_code",
+            text="Course Code"
+        )
 
-        self.course_tree.column("course_code", width=130, anchor="center")
-        self.course_tree.column("course_name", width=300, anchor="w")
-        self.course_tree.column("capacity", width=120, anchor="center")
-        self.course_tree.column("enrolled", width=120, anchor="center")
+        self.course_tree.heading(
+            "course_name",
+            text="Course Name"
+        )
 
-        # Insert course records
+        self.course_tree.heading(
+            "capacity",
+            text="Capacity"
+        )
+
+        self.course_tree.heading(
+            "enrolled",
+            text="Enrolled"
+        )
+
+        self.course_tree.column(
+            "course_code",
+            width=130,
+            anchor="center"
+        )
+
+        self.course_tree.column(
+            "course_name",
+            width=300,
+            anchor="w"
+        )
+
+        self.course_tree.column(
+            "capacity",
+            width=120,
+            anchor="center"
+        )
+
+        self.course_tree.column(
+            "enrolled",
+            width=120,
+            anchor="center"
+        )
+
+        # Insert placeholder course records
         for course_code, details in self.courses.items():
+
             self.course_tree.insert(
                 "",
                 "end",
+                iid=course_code,
                 values=(
                     course_code,
                     details["name"],
@@ -164,7 +207,6 @@ class CoursesPage:
             yscrollcommand=scrollbar.set
         )
 
-        # Display table
         self.course_tree.pack(
             side="left",
             fill="both",
@@ -180,6 +222,36 @@ class CoursesPage:
             pady=(0, 15)
         )
 
+        # Double-click event
+        self.course_tree.bind(
+            "<Double-1>",
+            self.open_enrolled_students
+        )
+
+    def open_add_course_dialog(self):
+
+        AddCourseDialog(
+            self.frame,
+            self.courses
+        )
+
+    def open_enrolled_students(self, event=None):
+
+        selected_item = self.course_tree.selection()
+
+        if not selected_item:
+            return
+
+        course_code = selected_item[0]
+        course_details = self.courses[course_code]
+
+        EnrolledStudentsDialog(
+            self.frame,
+            course_code,
+            course_details["name"],
+            course_details["enrolled"],
+            self.students
+        )
 
     def load_placeholder_courses(self):
 
@@ -188,7 +260,7 @@ class CoursesPage:
             "CS101": {
                 "name": "Introduction to Computing",
                 "capacity": 40,
-                "enrolled": set(),
+                "enrolled": {"2026-001", "2026-002"},
                 "prerequisites": set()
             },
 
@@ -221,6 +293,20 @@ class CoursesPage:
             }
         }
 
+    def load_placeholder_students(self):
+
+        self.students = {
+
+            "2026-001": {
+                "name": "Lopez, Dhan Paul",
+                "completed_courses": set()
+            },
+
+            "2026-002": {
+                "name": "Lopez, Dhan Paul",
+                "completed_courses": set()
+            }
+        }
 
 
 # Temporary testing

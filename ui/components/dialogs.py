@@ -1,5 +1,7 @@
+import tkinter as tk
 
 import tkinter as tk
+from tkinter import ttk, messagebox
 
 
 class StudentRegistrationDialog:
@@ -529,49 +531,301 @@ class AddCourseDialog:
         }
 
 # ======================================================
+#for courses_page.py
+class EnrolledStudentsDialog:
 
-# Testing code 4 AddCourseDialog
-if __name__ == "__main__":
+    def __init__(
+        self,
+        parent,
+        course_code,
+        course_name,
+        enrolled_ids,
+        students
+    ):
+        self.window = tk.Toplevel(parent)
+        self.window.title("Enrolled Students")
+        self.window.geometry("650x570")
+        self.window.configure(bg="#FFFFFF")
+        self.window.resizable(False, False)
 
-    root = tk.Tk()
-    root.title("QCU Enrollment System")
-    root.geometry("800x600")
+        self.window.transient(parent)
+        self.window.grab_set()
 
-    sample_courses = {
-        "CS101": {
-            "name": "Introduction to Computing",
-            "capacity": 40,
-            "enrolled": set(),
-            "prerequisites": set()
-        },
-        "CS102": {
-            "name": "Data Structures",
-            "capacity": 30,
-            "enrolled": set(),
-            "prerequisites": {"CS101"}
-        },
-        "CS103": {
-            "name": "Programming 2",
-            "capacity": 35,
-            "enrolled": set(),
-            "prerequisites": {"CS102"}
-        },
-        "IT101": {
-            "name": "Introduction to Information Technology",
-            "capacity": 40,
-            "enrolled": set(),
-            "prerequisites": set()
-        },
-        "IT102": {
-            "name": "Computer Systems and Architecture",
-            "capacity": 40,
-            "enrolled": set(),
-            "prerequisites": {"IT101"}
+        self.create_form(
+            course_code,
+            course_name,
+            enrolled_ids,
+            students
+        )
+
+    def create_form(
+        self,
+        course_code,
+        course_name,
+        enrolled_ids,
+        students
+    ):
+
+        # Dialog heading
+        title = tk.Label(
+            self.window,
+            text="Enrolled Students",
+            font=("Arial", 18, "bold"),
+            bg="#FFFFFF",
+            fg="#07549C"
+        )
+        title.pack(anchor="w", padx=25, pady=(25, 5))
+
+        # Course information
+        subtitle = tk.Label(
+            self.window,
+            text=f"{course_code} - {course_name}",
+            font=("Arial", 10),
+            bg="#FFFFFF",
+            fg="#555555"
+        )
+        subtitle.pack(anchor="w", padx=25, pady=(0, 15))
+
+        # Course prerequisites section
+        prerequisite_label = tk.Label(
+            self.window,
+            text="Course Prerequisites",
+            font=("Arial", 11, "bold"),
+            bg="#FFFFFF",
+            fg="#333333"
+        )
+        prerequisite_label.pack(
+            anchor="w",
+            padx=25,
+            pady=(0, 5)
+        )
+
+        prerequisite_frame = tk.Frame(
+            self.window,
+            bg="#F8FAFC",
+            bd=1,
+            relief="solid"
+        )
+        prerequisite_frame.pack(
+            fill="x",
+            padx=25,
+            pady=(0, 15)
+        )
+
+        # Placeholder prerequisite data
+        placeholder_prerequisites = {
+            "CS101": [],
+            "CS102": [
+                ("CS101", "Introduction to Computing")
+            ],
+            "CS103": [
+                ("CS101", "Introduction to Computing"),
+                ("CS102", "Data Structures")
+            ],
+            "IT101": [],
+            "IT102": [
+                ("IT101", "Introduction to Information Technology")
+            ]
         }
-    }
 
-    AddCourseDialog(root, sample_courses)
-    root.mainloop()
+        prerequisites = placeholder_prerequisites.get(
+            course_code,
+            []
+        )
+
+        if prerequisites:
+
+            for prerequisite_code, prerequisite_name in prerequisites:
+
+                prerequisite_item = tk.Label(
+                    prerequisite_frame,
+                    text=f"• {prerequisite_code} - {prerequisite_name}",
+                    font=("Arial", 10),
+                    bg="#F8FAFC",
+                    fg="#555555"
+                )
+                prerequisite_item.pack(
+                    anchor="w",
+                    padx=12,
+                    pady=4
+                )
+
+        else:
+
+            no_prerequisites_label = tk.Label(
+                prerequisite_frame,
+                text="No prerequisites",
+                font=("Arial", 10),
+                bg="#F8FAFC",
+                fg="#777777"
+            )
+            no_prerequisites_label.pack(
+                anchor="w",
+                padx=12,
+                pady=8
+            )
+
+        # Enrolled students section
+        students_label = tk.Label(
+            self.window,
+            text="Enrolled Students",
+            font=("Arial", 11, "bold"),
+            bg="#FFFFFF",
+            fg="#333333"
+        )
+        students_label.pack(
+            anchor="w",
+            padx=25,
+            pady=(0, 5)
+        )
+
+        # Table container
+        table_frame = tk.Frame(
+            self.window,
+            bg="#FFFFFF"
+        )
+        table_frame.pack(
+            fill="both",
+            expand=True,
+            padx=25
+        )
+
+        # Student table
+        columns = ("student_id", "student_name")
+
+        self.student_table = ttk.Treeview(
+            table_frame,
+            columns=columns,
+            show="headings",
+            height=8
+        )
+
+        self.student_table.heading(
+            "student_id",
+            text="Student ID"
+        )
+
+        self.student_table.heading(
+            "student_name",
+            text="Student Name"
+        )
+
+        self.student_table.column(
+            "student_id",
+            width=150,
+            anchor="center"
+        )
+
+        self.student_table.column(
+            "student_name",
+            width=400,
+            anchor="w"
+        )
+
+        self.student_table.pack(
+            side="left",
+            fill="both",
+            expand=True
+        )
+
+        # Scrollbar
+        scrollbar = ttk.Scrollbar(
+            table_frame,
+            orient="vertical",
+            command=self.student_table.yview
+        )
+        scrollbar.pack(side="right", fill="y")
+
+        self.student_table.configure(
+            yscrollcommand=scrollbar.set
+        )
+
+        # Display enrolled students
+        for student_id in sorted(enrolled_ids):
+
+            student_details = students.get(student_id, {})
+
+            student_name = student_details.get(
+                "name",
+                "Name unavailable"
+            )
+
+            self.student_table.insert(
+                "",
+                "end",
+                values=(student_id, student_name)
+            )
+
+        # Display empty message
+        if not enrolled_ids:
+            self.student_table.insert(
+                "",
+                "end",
+                values=("", "No students enrolled.")
+            )
+
+        # Button container
+        button_frame = tk.Frame(
+            self.window,
+            bg="#FFFFFF"
+        )
+        button_frame.pack(
+            fill="x",
+            padx=25,
+            pady=20
+        )
+
+        # Drop Student button
+        drop_button = tk.Button(
+            button_frame,
+            text="Drop Student",
+            font=("Arial", 10, "bold"),
+            bg="#DC2626",
+            fg="#FFFFFF",
+            activebackground="#B91C1C",
+            activeforeground="#FFFFFF",
+            relief="flat",
+            padx=15,
+            pady=8,
+            cursor="hand2",
+            command=self.confirm_drop
+        )
+        drop_button.pack(side="left")
+
+        # Close button
+        close_button = tk.Button(
+            button_frame,
+            text="Close",
+            font=("Arial", 10),
+            bg="#E5E7EB",
+            fg="#333333",
+            relief="flat",
+            padx=20,
+            pady=8,
+            cursor="hand2",
+            command=self.window.destroy
+        )
+        close_button.pack(side="right")
+
+    def confirm_drop(self):
+
+        from tkinter import messagebox
+
+        selected_item = self.student_table.selection()
+
+        if not selected_item:
+            messagebox.showwarning(
+                "No Student Selected",
+                "Please select a student first.",
+                parent=self.window
+            )
+            return
+
+        confirm = messagebox.askyesno(
+            "Confirm Drop",
+            "Are you sure you want to drop the selected student?",
+            parent=self.window
+        )
 
 #testing code for ViewStudentDialog
 #if __name__ == "__main__":

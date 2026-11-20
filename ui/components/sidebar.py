@@ -8,7 +8,6 @@ class Sidebar(tk.Frame):
         "Students",
         "Courses",
         "Enrollments",
-        "Prerequisites",
         "Reports"
     ]
 

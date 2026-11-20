@@ -1,9 +1,12 @@
+
 import tkinter as tk
 
 from .components.header import Header
 from .components.sidebar import Sidebar
 from .pages.dashboard import Dashboard
 from .pages.students_page import StudentsPage
+from .pages.courses_page import CoursesPage
+
 
 class MainWindow:
 
@@ -19,6 +22,7 @@ class MainWindow:
         self.build_layout()
 
     def build_layout(self):
+
         # Header
         self.header = Header(self.root)
         self.header.pack(fill="x")
@@ -60,7 +64,7 @@ class MainWindow:
 
     def show_page(self, page_name):
 
-        # Clear the previous page
+        # Clear previous page
         for widget in self.page_container.winfo_children():
             widget.destroy()
 
@@ -69,3 +73,6 @@ class MainWindow:
 
         elif page_name == "Students":
             StudentsPage(self.page_container)
+
+        elif page_name == "Courses":
+            CoursesPage(self.page_container)
