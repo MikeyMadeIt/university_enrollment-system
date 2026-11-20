@@ -146,7 +146,7 @@ class Dashboard:
             padx=10,
             pady=(0, 10)
         )
-        # temporary records, for visualizing what itll look like
+        # temporary records, for visualizing what ui look like
         courses = [
             ("CS102", "Data Structures", "28/30"),
             ("CS201", "Object-Oriented Programming", "25/30"),

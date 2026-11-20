@@ -343,6 +343,7 @@ class AddCompletedCourseDialog:
             padx=25
         )
 
+        #tempo data 4 ui testing
         self.course_combo = ttk.Combobox(
             self.window,
             font=("Arial", 10),

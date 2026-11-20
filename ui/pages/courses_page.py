@@ -7,13 +7,11 @@ from ui.components.dialogs.course_dialogs import (
     EnrolledStudentsDialog
 )
 
-
 class CoursesPage:
 
     def __init__(self, parent):
         self.parent = parent
 
-        # Main page frame
         self.frame = tk.Frame(
             self.parent,
             bg="#F1F3F5"
@@ -196,7 +194,7 @@ class CoursesPage:
                 )
             )
 
-        # Vertical scrollbar
+        #scrollbar
         scrollbar = ttk.Scrollbar(
             table_frame,
             orient="vertical",
@@ -222,7 +220,7 @@ class CoursesPage:
             pady=(0, 15)
         )
 
-        # Double-click event
+        #Double-click event
         self.course_tree.bind(
             "<Double-1>",
             self.open_enrolled_students
@@ -253,6 +251,7 @@ class CoursesPage:
             self.students
         )
 
+    #tempo data 4 ui testing
     def load_placeholder_courses(self):
 
         self.courses = {
@@ -293,6 +292,7 @@ class CoursesPage:
             }
         }
 
+    #tempo data 4 testing ui
     def load_placeholder_students(self):
 
         self.students = {
@@ -309,13 +309,13 @@ class CoursesPage:
         }
 
 
-# Temporary testing
-if __name__ == "__main__":
+#testing
+#if __name__ == "__main__":
+#
+#    root = tk.Tk()
+#    root.title("QCU Enrollment System")
+#    root.geometry("1000x650")
 
-    root = tk.Tk()
-    root.title("QCU Enrollment System")
-    root.geometry("1000x650")
+#    CoursesPage(root)
 
-    CoursesPage(root)
-
-    root.mainloop()
+#    root.mainloop()

@@ -379,6 +379,7 @@ class EnrolledStudentsDialog:
             pady=(0, 15)
         )
 
+        #tempo data 4 testing ui
         placeholder_prerequisites = {
             "CS101": [],
             "CS102": [

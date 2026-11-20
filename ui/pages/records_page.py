@@ -8,7 +8,6 @@ class RecordsPage:
     def __init__(self, parent):
         self.parent = parent
 
-        # Main page frame
         self.frame = tk.Frame(
             self.parent,
             bg="#F1F3F5"
@@ -61,7 +60,6 @@ class RecordsPage:
             pady=15
         )
 
-        # Section title
         section_title = tk.Label(
             table_frame,
             text="All Enrollment Records",
@@ -75,7 +73,6 @@ class RecordsPage:
             pady=(15, 10)
         )
 
-        # Table container
         tree_frame = tk.Frame(
             table_frame,
             bg="#FFFFFF"
@@ -86,7 +83,6 @@ class RecordsPage:
             pady=(0, 15)
         )
 
-        # Table style
         style = ttk.Style()
 
         style.configure(
@@ -213,7 +209,6 @@ class RecordsPage:
             pady=(0, 25)
         )
 
-        # Section title
         section_title = tk.Label(
             search_frame,
             text="Student Enrollment Search",
@@ -295,7 +290,7 @@ class RecordsPage:
             pady=(5, 5)
         )
 
-        # Scrollable enrolled courses container
+        #scrollable enrolled courses container
         course_container = tk.Frame(
             search_frame,
             bg="#FFFFFF"
