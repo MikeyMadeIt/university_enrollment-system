@@ -132,8 +132,6 @@ class Dashboard:
 
         title.pack(anchor="w", padx=20, pady=15)
 
-
-
     def create_course_list(self):
 
         self.course_list_frame = tk.Frame(
