@@ -1,10 +1,12 @@
+
 import tkinter as tk
-from tkinter import ttk
+from tkinter import ttk, messagebox
 
 from ui.components.dialogs.student_dialogs import (
     StudentRegistrationDialog,
     ViewStudentDialog
 )
+
 
 class StudentsPage:
 
@@ -257,6 +259,7 @@ class StudentsPage:
             pady=(0, 20)
         )
 
+        # Add Student button
         add_button = tk.Button(
             button_frame,
             text="+ Add Student",
@@ -273,6 +276,27 @@ class StudentsPage:
         )
 
         add_button.pack(side="right")
+
+        # Delete Student button
+        delete_button = tk.Button(
+            button_frame,
+            text="Delete Student",
+            font=("Arial", 10, "bold"),
+            bg="#DC3545",
+            fg="#FFFFFF",
+            activebackground="#B02A37",
+            activeforeground="#FFFFFF",
+            relief="flat",
+            padx=18,
+            pady=8,
+            cursor="hand2",
+            command=self.delete_student
+        )
+
+        delete_button.pack(
+            side="right",
+            padx=(0, 10)
+        )
 
     def display_students(self, students):
 
@@ -325,6 +349,58 @@ class StudentsPage:
             student_id: student
         })
 
+    def delete_student(self):
+
+        selected_item = self.student_tree.selection()
+
+        if not selected_item:
+
+            messagebox.showwarning(
+                "No Student Selected",
+                "Please select a student to delete.",
+                parent=self.frame.winfo_toplevel()
+            )
+
+            return
+
+        values = self.student_tree.item(
+            selected_item[0],
+            "values"
+        )
+
+        student_id = values[0]
+        student_name = values[1]
+
+        confirm = messagebox.askyesno(
+            "Confirm Deletion",
+            f"Are you sure you want to delete this student?\n\n"
+            f"Student ID: {student_id}\n"
+            f"Name: {student_name}",
+            parent=self.frame.winfo_toplevel()
+        )
+
+        if not confirm:
+            return
+
+        #4 UI testing only, remove from placeholder data
+        self.students.pop(student_id, None)
+
+        #eset search field
+        self.search_entry.delete(0, tk.END)
+        self.search_entry.insert(
+            0,
+            "Search by student ID"
+        )
+        self.search_entry.config(fg="#888888")
+
+        # refresh table
+        self.display_students(self.students)
+
+        self.search_result.config(
+            text="Student deleted successfully.",
+            fg="#16803C"
+        )
+
     def open_registration_dialog(self):
 
         StudentRegistrationDialog(
@@ -357,7 +433,7 @@ class StudentsPage:
             student["completed_courses"]
         )
 
-    #tempo data 4 testing ui
+    #tempo data 4 UI testing
     def load_placeholder_students(self):
 
         self.students = {

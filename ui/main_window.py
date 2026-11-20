@@ -25,11 +25,10 @@ class MainWindow:
 
     def build_layout(self):
 
-        # Header
+        #header
         self.header = Header(self.root)
         self.header.pack(fill="x")
 
-        # Main body
         self.body = tk.Frame(
             self.root,
             bg="#F1F3F5"
@@ -39,7 +38,7 @@ class MainWindow:
             expand=True
         )
 
-        # Sidebar
+        #sidebar
         self.sidebar = Sidebar(
             self.body,
             self.show_page
@@ -49,7 +48,6 @@ class MainWindow:
             fill="y"
         )
 
-        # Page container
         self.page_container = tk.Frame(
             self.body,
             bg="#F1F3F5"
@@ -60,7 +58,7 @@ class MainWindow:
             expand=True
         )
 
-        # Default page
+        #Default page
         self.sidebar.set_active("Dashboard")
         self.show_page("Dashboard")
 
