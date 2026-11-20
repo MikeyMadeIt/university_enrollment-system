@@ -114,7 +114,7 @@ class Dashboard:
             card,
             text=value,
             font=("Arial", 24, "bold"),
-            fg="#07549C",
+            fg="#333333",
             bg="#FFFFFF"
         )
         number.pack(anchor="w", pady=(8, 0))

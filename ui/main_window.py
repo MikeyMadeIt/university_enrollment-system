@@ -6,6 +6,7 @@ from .components.sidebar import Sidebar
 from .pages.dashboard import Dashboard
 from .pages.students_page import StudentsPage
 from .pages.courses_page import CoursesPage
+from .pages.enrollments_page import EnrollmentsPage
 
 
 class MainWindow:
@@ -76,3 +77,6 @@ class MainWindow:
 
         elif page_name == "Courses":
             CoursesPage(self.page_container)
+
+        elif page_name == "Enrollments":
+            EnrollmentsPage(self.page_container)
