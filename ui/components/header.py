@@ -1,3 +1,4 @@
+
 import tkinter as tk
 
 
@@ -26,20 +27,7 @@ class Header(tk.Frame):
             padx=25
         )
 
-        # University abbreviation
-        university_short = tk.Label(
-            branding,
-            text="QCU",
-            font=("Arial", 19, "bold"),
-            fg="#07549C",
-            bg="white"
-        )
-        university_short.pack(
-            side="left",
-            padx=(0, 15)
-        )
-
-        # University name and application name
+        #Uni name and application name
         text_container = tk.Frame(
             branding,
             bg="white"
@@ -72,13 +60,16 @@ class Header(tk.Frame):
             anchor="w"
         )
 
-        # Red bottom accent
+        #redunderline
         accent = tk.Frame(
             self,
             bg="#E30613",
             height=4
         )
-        accent.pack(
-            side="bottom",
-            fill="x"
+        accent.place(
+            relx=0,
+            rely=1,
+            relwidth=1,
+            anchor="sw",
+            height=4
         )

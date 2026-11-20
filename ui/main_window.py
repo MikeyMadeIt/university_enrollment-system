@@ -1,8 +1,14 @@
+
 import tkinter as tk
 
+from .pages.records_page import RecordsPage
 from .components.header import Header
 from .components.sidebar import Sidebar
 from .pages.dashboard import Dashboard
+from .pages.students_page import StudentsPage
+from .pages.courses_page import CoursesPage
+from .pages.enrollments_page import EnrollmentsPage
+
 
 class MainWindow:
 
@@ -18,11 +24,11 @@ class MainWindow:
         self.build_layout()
 
     def build_layout(self):
-        # Header
+
+        #header
         self.header = Header(self.root)
         self.header.pack(fill="x")
 
-        # Main body
         self.body = tk.Frame(
             self.root,
             bg="#F1F3F5"
@@ -32,7 +38,7 @@ class MainWindow:
             expand=True
         )
 
-        # Sidebar
+        #sidebar
         self.sidebar = Sidebar(
             self.body,
             self.show_page
@@ -42,7 +48,6 @@ class MainWindow:
             fill="y"
         )
 
-        # Page container
         self.page_container = tk.Frame(
             self.body,
             bg="#F1F3F5"
@@ -53,15 +58,27 @@ class MainWindow:
             expand=True
         )
 
-        # Default page
+        #Default page
         self.sidebar.set_active("Dashboard")
         self.show_page("Dashboard")
 
     def show_page(self, page_name):
 
-        # Clear the previous page
+        # Clear previous page
         for widget in self.page_container.winfo_children():
             widget.destroy()
 
         if page_name == "Dashboard":
             Dashboard(self.page_container)
+
+        elif page_name == "Students":
+            StudentsPage(self.page_container)
+
+        elif page_name == "Courses":
+            CoursesPage(self.page_container)
+
+        elif page_name == "Enrollments":
+            EnrollmentsPage(self.page_container)
+
+        elif page_name == "Records":
+            RecordsPage(self.page_container)

@@ -114,7 +114,7 @@ class Dashboard:
             card,
             text=value,
             font=("Arial", 24, "bold"),
-            fg="#07549C",
+            fg="#333333",
             bg="#FFFFFF"
         )
         number.pack(anchor="w", pady=(8, 0))
@@ -132,8 +132,6 @@ class Dashboard:
 
         title.pack(anchor="w", padx=20, pady=15)
 
-
-
     def create_course_list(self):
 
         self.course_list_frame = tk.Frame(
@@ -146,7 +144,7 @@ class Dashboard:
             padx=10,
             pady=(0, 10)
         )
-        # temporary records, for visualizing what itll look like
+        # temporary records, for visualizing what ui look like
         courses = [
             ("CS102", "Data Structures", "28/30"),
             ("CS201", "Object-Oriented Programming", "25/30"),
