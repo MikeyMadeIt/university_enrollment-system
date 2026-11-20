@@ -1,6 +1,7 @@
 
 import tkinter as tk
 
+from .pages.records_page import RecordsPage
 from .components.header import Header
 from .components.sidebar import Sidebar
 from .pages.dashboard import Dashboard
@@ -80,3 +81,6 @@ class MainWindow:
 
         elif page_name == "Enrollments":
             EnrollmentsPage(self.page_container)
+
+        elif page_name == "Records":
+            RecordsPage(self.page_container)

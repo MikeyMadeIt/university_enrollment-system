@@ -1,31 +1,31 @@
 import tkinter as tk
 from tkinter import ttk
 
-from ui.components.dialogs import (
+from ui.components.dialogs.student_dialogs import (
     StudentRegistrationDialog,
     ViewStudentDialog
 )
-
 
 class StudentsPage:
 
     def __init__(self, parent):
         self.parent = parent
 
-        # Main page frame
         self.frame = tk.Frame(
             self.parent,
             bg="#F1F3F5"
         )
+
         self.frame.pack(fill="both", expand=True)
 
         self.create_header()
         self.create_search_bar()
         self.load_placeholder_students()
         self.create_student_table()
+        self.create_bottom_button()
 
     def create_header(self):
-        # Page title
+
         title = tk.Label(
             self.frame,
             text="Students",
@@ -33,9 +33,13 @@ class StudentsPage:
             bg="#F1F3F5",
             fg="#07549C"
         )
-        title.pack(anchor="w", padx=25, pady=(25, 5))
 
-        # Page description
+        title.pack(
+            anchor="w",
+            padx=25,
+            pady=(25, 5)
+        )
+
         subtitle = tk.Label(
             self.frame,
             text="Manage student records and information",
@@ -43,27 +47,32 @@ class StudentsPage:
             bg="#F1F3F5",
             fg="#555555"
         )
-        subtitle.pack(anchor="w", padx=25)
+
+        subtitle.pack(
+            anchor="w",
+            padx=25
+        )
 
     def create_search_bar(self):
-        # Search bar and button container
+
         search_frame = tk.Frame(
             self.frame,
             bg="#F1F3F5"
         )
+
         search_frame.pack(
             fill="x",
             padx=25,
             pady=20
         )
 
-        # Search input
         self.search_entry = tk.Entry(
             search_frame,
             font=("Arial", 11),
             relief="solid",
             bd=1
         )
+
         self.search_entry.pack(
             side="left",
             fill="x",
@@ -77,37 +86,84 @@ class StudentsPage:
             "Search by student ID"
         )
 
-        # Add Student button
-        add_button = tk.Button(
+        self.search_entry.config(fg="#888888")
+
+        self.search_entry.bind(
+            "<FocusIn>",
+            self.clear_placeholder
+        )
+
+        self.search_entry.bind(
+            "<FocusOut>",
+            self.restore_placeholder
+        )
+
+        self.search_entry.bind(
+            "<Return>",
+            lambda event: self.search_student()
+        )
+
+        search_button = tk.Button(
             search_frame,
-            text="+ Add Student",
+            text="Search",
             font=("Arial", 10, "bold"),
             bg="#07549C",
             fg="#FFFFFF",
             activebackground="#06447D",
             activeforeground="#FFFFFF",
             relief="flat",
-            padx=15,
+            padx=18,
             pady=8,
             cursor="hand2",
-            command=self.open_registration_dialog
+            command=self.search_student
         )
-        add_button.pack(side="right")
+
+        search_button.pack(side="right")
+
+        self.search_result = tk.Label(
+            self.frame,
+            text="",
+            font=("Arial", 9),
+            bg="#F1F3F5",
+            fg="#DC3545"
+        )
+
+        self.search_result.pack(
+            anchor="w",
+            padx=25,
+            pady=(0, 5)
+        )
+
+    def clear_placeholder(self, event=None):
+
+        if self.search_entry.get() == "Search by student ID":
+            self.search_entry.delete(0, tk.END)
+            self.search_entry.config(fg="#333333")
+
+    def restore_placeholder(self, event=None):
+
+        if not self.search_entry.get().strip():
+            self.search_entry.insert(
+                0,
+                "Search by student ID"
+            )
+
+            self.search_entry.config(fg="#888888")
 
     def create_student_table(self):
-        # Table container
+
         table_frame = tk.Frame(
             self.frame,
             bg="#FFFFFF"
         )
+
         table_frame.pack(
             fill="both",
             expand=True,
             padx=25,
-            pady=(0, 25)
+            pady=(0, 10)
         )
 
-        # Table title
         table_title = tk.Label(
             table_frame,
             text="Student Records",
@@ -115,13 +171,13 @@ class StudentsPage:
             bg="#FFFFFF",
             fg="#07549C"
         )
+
         table_title.pack(
             anchor="w",
             padx=15,
-            pady=15
+            pady=12
         )
 
-        # Columns
         columns = (
             "student_id",
             "name"
@@ -130,10 +186,10 @@ class StudentsPage:
         self.student_tree = ttk.Treeview(
             table_frame,
             columns=columns,
-            show="headings"
+            show="headings",
+            height=12
         )
 
-        # Column headings
         self.student_tree.heading(
             "student_id",
             text="Student ID"
@@ -144,7 +200,6 @@ class StudentsPage:
             text="Student Name"
         )
 
-        # Column widths and alignment
         self.student_tree.column(
             "student_id",
             width=150,
@@ -157,19 +212,6 @@ class StudentsPage:
             anchor="center"
         )
 
-        # Display student records
-        for student_id, details in self.students.items():
-
-            self.student_tree.insert(
-                "",
-                "end",
-                values=(
-                    student_id,
-                    details["name"]
-                )
-            )
-
-        # Create vertical scrollbar
         scrollbar = ttk.Scrollbar(
             table_frame,
             orient="vertical",
@@ -180,7 +222,6 @@ class StudentsPage:
             yscrollcommand=scrollbar.set
         )
 
-        # Display table
         self.student_tree.pack(
             side="left",
             fill="both",
@@ -196,26 +237,107 @@ class StudentsPage:
             pady=(0, 15)
         )
 
-        # Double-click to view student details
         self.student_tree.bind(
             "<Double-1>",
             self.open_view_dialog
         )
 
+        self.display_students(self.students)
+
+    def create_bottom_button(self):
+
+        button_frame = tk.Frame(
+            self.frame,
+            bg="#F1F3F5"
+        )
+
+        button_frame.pack(
+            fill="x",
+            padx=25,
+            pady=(0, 20)
+        )
+
+        add_button = tk.Button(
+            button_frame,
+            text="+ Add Student",
+            font=("Arial", 10, "bold"),
+            bg="#07549C",
+            fg="#FFFFFF",
+            activebackground="#06447D",
+            activeforeground="#FFFFFF",
+            relief="flat",
+            padx=18,
+            pady=8,
+            cursor="hand2",
+            command=self.open_registration_dialog
+        )
+
+        add_button.pack(side="right")
+
+    def display_students(self, students):
+
+        for item in self.student_tree.get_children():
+            self.student_tree.delete(item)
+
+        for student_id, details in students.items():
+
+            self.student_tree.insert(
+                "",
+                "end",
+                values=(
+                    student_id,
+                    details["name"]
+                )
+            )
+
+    def search_student(self):
+
+        student_id = self.search_entry.get().strip()
+
+        if student_id == "Search by student ID" or not student_id:
+
+            self.search_result.config(
+                text="Please enter a Student ID.",
+                fg="#DC3545"
+            )
+
+            self.display_students(self.students)
+            return
+
+        student = self.students.get(student_id)
+
+        if student is None:
+
+            self.search_result.config(
+                text="Student not found.",
+                fg="#DC3545"
+            )
+
+            self.display_students({})
+            return
+
+        self.search_result.config(
+            text="Student found successfully.",
+            fg="#16803C"
+        )
+
+        self.display_students({
+            student_id: student
+        })
+
     def open_registration_dialog(self):
+
         StudentRegistrationDialog(
             self.frame.winfo_toplevel()
         )
 
-    def open_view_dialog(self, event):
+    def open_view_dialog(self, event=None):
 
-        # Get selected row
         selected_item = self.student_tree.selection()
 
         if not selected_item:
             return
 
-        # Get student ID from selected row
         values = self.student_tree.item(
             selected_item[0],
             "values"
@@ -223,109 +345,27 @@ class StudentsPage:
 
         student_id = values[0]
 
-        # Retrieve student information
         student = self.students.get(student_id)
 
         if student is None:
             return
 
-        student_name = student["name"]
-        completed_courses = student["completed_courses"]
-
         ViewStudentDialog(
             self.frame.winfo_toplevel(),
             student_id,
-            student_name,
-            completed_courses
+            student["name"],
+            student["completed_courses"]
         )
 
-    #placeholder data
+    #tempo data 4 testing ui
     def load_placeholder_students(self):
+
         self.students = {
-            "2026-001": {
-                "name": "Lopez Dhan Paul",
-                "completed_courses": {"CS101"}
-            },
-            "2026-002": {
-                "name": "Lopez Dhan Paul",
-                "completed_courses": {"CS101", "CS102"}
-            },
-            "2026-003": {
-                "name": "Lopez Dhan Paul",
-                "completed_courses": set()
-            },
-            "2026-004": {
-                "name": "Lopez Dhan Paul",
-                "completed_courses": {"CS101", "CS102"}
-            },
-            "2026-005": {
-                "name": "Lopez Dhan Paul",
-                "completed_courses": {"CS101", "CS102"}
-            },"2026-006": {
-                "name": "Lopez Dhan Paul",
-                "completed_courses": {"CS101", "CS102"}
-            },"2026-007": {
-                "name": "Lopez Dhan Paul",
-                "completed_courses": {"CS101", "CS102"}
-            },"2026-008": {
-                "name": "Lopez Dhan Paul",
-                "completed_courses": {"CS101", "CS102"}
-            },"2026-009": {
-                "name": "Lopez Dhan Paul",
-                "completed_courses": {"CS101", "CS102"}
-            },"2026-010": {
-                "name": "Lopez Dhan Paul",
-                "completed_courses": {"CS101", "CS102"}
-            },"2026-011": {
-                "name": "Lopez Dhan Paul",
-                "completed_courses": {"CS101", "CS102"}
-            },"2026-012": {
-                "name": "Lopez Dhan Paul",
-                "completed_courses": {"CS101", "CS102"}
-            },"2026-013": {
-                "name": "Lopez Dhan Paul",
-                "completed_courses": {"CS101", "CS102"}
-            },"2026-014": {
-                "name": "Lopez Dhan Paul",
-                "completed_courses": {"CS101", "CS102"}
-            },"2026-015": {
-                "name": "Lopez Dhan Paul",
-                "completed_courses": {"CS101", "CS102"}
-            },"2026-016": {
-                "name": "Lopez Dhan Paul",
-                "completed_courses": {"CS101", "CS102"}
-            },"2026-017": {
-                "name": "Lopez Dhan Paul",
-                "completed_courses": {"CS101", "CS102"}
-            },"2026-018": {
-                "name": "Lopez Dhan Paul",
-                "completed_courses": {"CS101", "CS102"}
-            },"2026-019": {
-                "name": "Lopez Dhan Paul",
-                "completed_courses": {"CS101", "CS102"}
-            },"2026-020": {
-                "name": "Lopez Dhan Paul",
-                "completed_courses": {"CS101", "CS102"}
-            },"2026-021": {
-                "name": "Lopez Dhan Paul",
-                "completed_courses": {"CS101", "CS102"}
-            },"2026-022": {
-                "name": "Lopez Dhan Paul",
-                "completed_courses": {"CS101", "CS102"}
-            },"2026-023": {
-                "name": "Lopez Dhan Paul",
-                "completed_courses": {"CS101", "CS102"}
-            },"2026-024": {
-                "name": "Lopez Dhan Paul",
-                "completed_courses": {"CS101", "CS102"}
-            },"2026-025": {
-                "name": "Lopez Dhan Paul",
-                "completed_courses": {"CS101", "CS102"}
-            },"2026-026": {
-                "name": "Lopez Dhan Paul",
-                "completed_courses": {"CS101", "CS102"}
-            },
-
-
+            f"2026-{i:03d}": {
+                "name": "Lopez, Dhan Paul",
+                "completed_courses": (
+                    {"CS101", "CS102"} if i != 3 else set()
+                )
+            }
+            for i in range(1, 27)
         }
-

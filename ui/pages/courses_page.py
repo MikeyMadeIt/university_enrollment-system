@@ -2,7 +2,7 @@
 import tkinter as tk
 from tkinter import ttk
 
-from ui.components.dialogs import (
+from ui.components.dialogs.course_dialogs import (
     AddCourseDialog,
     EnrolledStudentsDialog
 )
