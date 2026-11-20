@@ -7,6 +7,7 @@ from ui.components.dialogs.course_dialogs import (
     EnrolledStudentsDialog
 )
 
+
 class CoursesPage:
 
     def __init__(self, parent):
@@ -77,22 +78,21 @@ class CoursesPage:
             "Search by course code"
         )
 
-        #Course button
-        add_button = tk.Button(
+        # Search button
+        search_button = tk.Button(
             search_frame,
-            text="+ Add Course",
+            text="Search",
             font=("Arial", 10, "bold"),
             bg="#07549C",
             fg="#FFFFFF",
             activebackground="#06447D",
             activeforeground="#FFFFFF",
             relief="flat",
-            padx=15,
+            padx=20,
             pady=8,
-            cursor="hand2",
-            command=self.open_add_course_dialog
+            cursor="hand2"
         )
-        add_button.pack(side="right")
+        search_button.pack(side="right")
 
     def create_course_table(self):
 
@@ -105,7 +105,7 @@ class CoursesPage:
             fill="both",
             expand=True,
             padx=25,
-            pady=(0, 25)
+            pady=(0, 10)
         )
 
         # Table title
@@ -194,7 +194,7 @@ class CoursesPage:
                 )
             )
 
-        #scrollbar
+        # Scrollbar
         scrollbar = ttk.Scrollbar(
             table_frame,
             orient="vertical",
@@ -220,10 +220,32 @@ class CoursesPage:
             pady=(0, 15)
         )
 
-        #Double-click event
+        # Double-click event
         self.course_tree.bind(
             "<Double-1>",
             self.open_enrolled_students
+        )
+
+        # Add Course button below the table
+        add_button = tk.Button(
+            self.frame,
+            text="+ Add Course",
+            font=("Arial", 10, "bold"),
+            bg="#07549C",
+            fg="#FFFFFF",
+            activebackground="#06447D",
+            activeforeground="#FFFFFF",
+            relief="flat",
+            padx=15,
+            pady=8,
+            cursor="hand2",
+            command=self.open_add_course_dialog
+        )
+
+        add_button.pack(
+            anchor="e",
+            padx=25,
+            pady=(0, 20)
         )
 
     def open_add_course_dialog(self):
@@ -251,7 +273,7 @@ class CoursesPage:
             self.students
         )
 
-    #tempo data 4 ui testing
+    # Temporary data for UI testing
     def load_placeholder_courses(self):
 
         self.courses = {
@@ -292,7 +314,7 @@ class CoursesPage:
             }
         }
 
-    #tempo data 4 testing ui
+    # Temporary data for UI testing
     def load_placeholder_students(self):
 
         self.students = {
@@ -309,13 +331,13 @@ class CoursesPage:
         }
 
 
-#testing
-#if __name__ == "__main__":
+# Testing
+# if __name__ == "__main__":
 #
-#    root = tk.Tk()
-#    root.title("QCU Enrollment System")
-#    root.geometry("1000x650")
-
-#    CoursesPage(root)
-
-#    root.mainloop()
+#     root = tk.Tk()
+#     root.title("QCU Enrollment System")
+#     root.geometry("1000x650")
+#
+#     CoursesPage(root)
+#
+#     root.mainloop()
