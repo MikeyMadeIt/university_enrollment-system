@@ -80,25 +80,16 @@ class MainWindow:
 
         elif page_name == "Students":
             StudentsPage(self.page_container, self.student_service,
-                         self.enrollment_service, self.course_service,
-                         on_change=self.refresh_current_page)
+                         self.enrollment_service, self.course_service)
 
         elif page_name == "Courses":
             CoursesPage(self.page_container, self.course_service,
-                        self.enrollment_service, self.student_service,
-                        on_change=self.refresh_current_page)
+                        self.enrollment_service, self.student_service)
 
         elif page_name == "Enrollments":
             EnrollmentsPage(self.page_container, self.student_service,
-                            self.course_service, self.enrollment_service,
-                            on_change=self.refresh_current_page)
+                            self.course_service, self.enrollment_service)
 
         elif page_name == "Records":
             RecordsPage(self.page_container, self.enrollment_service,
-                        self.student_service, self.course_service,
-                        on_change=self.refresh_current_page)
-
-    def refresh_current_page(self):
-        """Refresh the original page layout after a service operation."""
-        current = getattr(self, "current_page", "Dashboard")
-        self.show_page(current)
+                        self.student_service, self.course_service)

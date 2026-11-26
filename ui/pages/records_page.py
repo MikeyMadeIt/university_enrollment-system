@@ -5,13 +5,11 @@ from tkinter import messagebox, ttk
 
 class RecordsPage:
 
-    def __init__(self, parent, enrollment_service, student_service, course_service,
-                 on_change=None):
+    def __init__(self, parent, enrollment_service, student_service, course_service):
         self.parent = parent
         self.enrollment_service = enrollment_service
         self.student_service = student_service
         self.course_service = course_service
-        self.on_change = on_change
 
         self.frame = tk.Frame(
             self.parent,
@@ -222,8 +220,6 @@ class RecordsPage:
             self.enrollment_service.drop(student_id, course_code)
             self.load_enrollment_records()
             self._populate_records()
-            if self.on_change:
-                self.on_change()
         except (ValueError, OSError) as exc:
             messagebox.showerror("Enrollment", str(exc), parent=self.frame.winfo_toplevel())
 

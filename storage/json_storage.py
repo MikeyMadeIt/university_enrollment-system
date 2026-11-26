@@ -23,9 +23,18 @@ class JsonStorage:
             return fallback
         try:
             with open(path, "r", encoding="utf-8") as f:
-                return json.load(f)
+                data = json.load(f)
         except (json.JSONDecodeError, OSError):
             return fallback
+
+        # Callers pass the shape they need as the default (usually a list).
+        # A syntactically valid file with the wrong root type is still invalid
+        # for that caller, so use its fallback instead of crashing in a service.
+        if not isinstance(data, (list, dict)):
+            return fallback
+        if isinstance(fallback, (list, dict)) and not isinstance(data, type(fallback)):
+            return fallback
+        return data
 
     def save(self, filename, data):
         path = self._path(filename)

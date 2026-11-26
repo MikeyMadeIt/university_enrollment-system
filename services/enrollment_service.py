@@ -18,7 +18,10 @@ class EnrollmentService:
         self.enrollments = EnrollmentSet()
         self.records = EnrollmentList()
         for row in storage.load("enrollments.json", []):
-            sid, code = row.get("student_id"), row.get("course_code")
+            if not isinstance(row, dict):
+                continue
+            sid = str(row.get("student_id", "")).strip().upper()
+            code = str(row.get("course_code", "")).strip().upper()
             if not sid or not code or not self.enrollments.add_enrollment(sid, code):
                 continue
             self.records.add_record(sid, code, row.get("timestamp"))

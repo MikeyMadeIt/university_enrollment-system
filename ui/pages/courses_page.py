@@ -11,12 +11,11 @@ from ui.components.dialogs.course_dialogs import (
 class CoursesPage:
 
     def __init__(self, parent, course_service, enrollment_service,
-                 student_service, on_change=None):
+                 student_service):
         self.parent = parent
         self.course_service = course_service
         self.enrollment_service = enrollment_service
         self.student_service = student_service
-        self.on_change = on_change
 
         self.frame = tk.Frame(
             self.parent,
@@ -276,10 +275,7 @@ class CoursesPage:
 
     def _add_course(self, code, title, capacity, prerequisites):
         self.course_service.add(code, title, capacity, prerequisites)
-        self.load_courses()
         self.refresh_courses()
-        if self.on_change:
-            self.on_change()
 
     def search_courses(self):
         query = self.search_entry.get().strip()
@@ -309,8 +305,6 @@ class CoursesPage:
             self.enrollment_service.drop_all_for_course(code)
             self.course_service.remove(code)
             self.refresh_courses()
-            if self.on_change:
-                self.on_change()
         except (ValueError, OSError) as exc:
             messagebox.showerror("Delete Failed", str(exc), parent=self.frame.winfo_toplevel())
 
@@ -348,8 +342,6 @@ class CoursesPage:
     def _drop_enrolled_student(self, student_id, course_code):
         self.enrollment_service.drop(student_id, course_code)
         self.refresh_courses()
-        if self.on_change:
-            self.on_change()
 
     def load_courses(self):
         self.courses = {}

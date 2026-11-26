@@ -6,12 +6,11 @@ from tkinter import ttk
 class EnrollmentsPage:
 
     def __init__(self, parent, student_service, course_service,
-                 enrollment_service, on_change=None):
+                 enrollment_service):
         self.parent = parent
         self.student_service = student_service
         self.course_service = course_service
         self.enrollment_service = enrollment_service
-        self.on_change = on_change
 
         # Main page frame
         self.frame = tk.Frame(
@@ -387,8 +386,6 @@ class EnrollmentsPage:
             try:
                 self.enrollment_service.enroll(student_id, course_code)
                 self.enrollment_result.config(text="Enrollment submitted successfully!", fg="#16803C")
-                if self.on_change:
-                    self.on_change()
             except (ValueError, OSError) as exc:
                 self.enrollment_result.config(text=f"Enrollment failed: {exc}", fg="#DC3545")
 

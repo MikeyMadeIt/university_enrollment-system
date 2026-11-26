@@ -11,12 +11,11 @@ from ui.components.dialogs.student_dialogs import (
 class StudentsPage:
 
     def __init__(self, parent, student_service, enrollment_service,
-                 course_service, on_change=None):
+                 course_service):
         self.parent = parent
         self.student_service = student_service
         self.enrollment_service = enrollment_service
         self.course_service = course_service
-        self.on_change = on_change
 
         self.frame = tk.Frame(
             self.parent,
@@ -333,7 +332,7 @@ class StudentsPage:
             self.display_students(self.students)
             return
 
-        student = self.students.get(student_id.upper())
+        student = self.student_service.search(student_id)
 
         if student is None:
 
@@ -350,9 +349,7 @@ class StudentsPage:
             fg="#16803C"
         )
 
-        self.display_students({
-            student_id.upper(): student
-        })
+        self.display_students({student["student_id"]: student})
 
     def delete_student(self):
 
@@ -410,8 +407,6 @@ class StudentsPage:
             text="Student deleted successfully.",
             fg="#16803C"
         )
-        if self.on_change:
-            self.on_change()
 
     def open_registration_dialog(self):
 
@@ -422,8 +417,6 @@ class StudentsPage:
         self.load_students()
         self.display_students(self.students)
         self.search_result.config(text="Student registered successfully.", fg="#16803C")
-        if self.on_change:
-            self.on_change()
 
     def open_view_dialog(self, event=None):
 
@@ -439,7 +432,7 @@ class StudentsPage:
 
         student_id = values[0]
 
-        student = self.students.get(student_id)
+        student = self.student_service.get(student_id)
 
         if student is None:
             return
@@ -454,8 +447,6 @@ class StudentsPage:
         self.student_service.add_completed_course(student_id, course_code)
         self.load_students()
         self.display_students(self.students)
-        if self.on_change:
-            self.on_change()
 
     #tempo data 4 UI testing
     def load_students(self):

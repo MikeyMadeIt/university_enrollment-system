@@ -11,11 +11,25 @@ class CourseService:
         self.storage = storage
         self.courses = CourseDictionary()
         for row in storage.load("courses.json", []):
+            if not isinstance(row, dict):
+                continue
             code = row.get("course_code", row.get("code"))
             title = row.get("title", row.get("name", ""))
-            if code and title:
-                self.courses.add_course(str(code).upper(), title, int(row.get("capacity", 0)),
-                                         row.get("prerequisites", []))
+            if not code or not isinstance(title, str) or not title.strip():
+                continue
+            try:
+                capacity = int(row.get("capacity", 0))
+            except (TypeError, ValueError):
+                continue
+            if capacity <= 0:
+                continue
+            prerequisites = row.get("prerequisites", [])
+            if not isinstance(prerequisites, (list, tuple, set)):
+                prerequisites = []
+            prerequisites = [str(value).strip().upper() for value in prerequisites
+                             if str(value).strip()]
+            self.courses.add_course(str(code).strip().upper(), title.strip(), capacity,
+                                    prerequisites)
 
     def add(self, code, title, capacity, prerequisites=None):
         code, title = (code or "").strip().upper(), (title or "").strip()
