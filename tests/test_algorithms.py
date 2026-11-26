@@ -1,7 +1,6 @@
 from algorithms import (
     bfs,
     bfs_levels,
-    bubble_sort,
     bubble_sort_by_name,
     bubble_sort_courses_by_capacity,
     build_prerequisite_graph,
@@ -11,6 +10,7 @@ from algorithms import (
     search_courses_by_keyword,
     topological_sort,
 )
+import algorithms.sorting as sorting
 from data_structures import CourseDictionary, EnrollmentList, EnrollmentSet, StudentDictionary
 
 
@@ -36,7 +36,6 @@ def test_original_search_and_sort_functions():
     courses = {"CS101": {"name": "Intro Programming"}, "MA101": {"name": "Math"}}
     assert search_courses_by_keyword(courses, "programming")[0][0] == "CS101"
     rows = [{"name": "Zed"}, {"name": "amy"}]
-    assert [row["name"] for row in bubble_sort(rows, "name")] == ["amy", "Zed"]
     assert [row["name"] for row in bubble_sort_by_name(rows)] == ["amy", "Zed"]
     assert [row["name"] for row in rows] == ["Zed", "amy"]
 
@@ -48,6 +47,10 @@ def test_original_search_and_sort_functions():
     assert [code for code, _ in bubble_sort_courses_by_capacity(courses)] == [
         "CS102", "CS201", "CS101"
     ]
+    assert {
+        name for name in vars(sorting)
+        if name.startswith("bubble_sort")
+    } == {"bubble_sort_by_name", "bubble_sort_courses_by_capacity"}
 
 
 def test_data_structure_package_exports():
