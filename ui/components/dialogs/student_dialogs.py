@@ -1,12 +1,12 @@
-
 import tkinter as tk
 from tkinter import ttk, messagebox
 
 
 class StudentRegistrationDialog:
 
-    def __init__(self, parent):
+    def __init__(self, parent, on_submit=None):
         self.parent = parent
+        self.on_submit = on_submit
 
         self.window = tk.Toplevel(parent)
         self.window.title("Register Student")
@@ -118,14 +118,27 @@ class StudentRegistrationDialog:
             relief="flat",
             padx=15,
             pady=8,
-            cursor="hand2"
+            cursor="hand2",
+            command=self.register_student
         )
         register_button.pack(side="right")
+
+    def register_student(self):
+        try:
+            if self.on_submit:
+                self.on_submit(self.id_entry.get(), self.name_entry.get())
+            self.window.destroy()
+        except (ValueError, OSError) as exc:
+            messagebox.showerror("Student", str(exc), parent=self.window)
 
 
 class ViewStudentDialog:
 
-    def __init__(self, parent, student_id, student_name, completed_courses):
+    def __init__(self, parent, student_id, student_name, completed_courses,
+                 on_add_completed=None, courses=()):
+        self.on_add_completed = on_add_completed
+        self.available_courses = courses
+        self.student_id = student_id
 
         self.window = tk.Toplevel(parent)
         self.window.title("Student Information")
@@ -282,12 +295,16 @@ class ViewStudentDialog:
 
     def open_add_course_dialog(self):
 
-        AddCompletedCourseDialog(self.window)
+        AddCompletedCourseDialog(self.window, self.student_id,
+                                 self.on_add_completed, self.available_courses)
 
 
 class AddCompletedCourseDialog:
 
-    def __init__(self, parent):
+    def __init__(self, parent, student_id=None, on_submit=None, courses=()):
+        self.student_id = student_id
+        self.on_submit = on_submit
+        self.courses = courses
 
         self.window = tk.Toplevel(parent)
         self.window.title("Add Completed Course")
@@ -343,19 +360,12 @@ class AddCompletedCourseDialog:
             padx=25
         )
 
-        #tempo data 4 ui testing
+        values = [f"{course['course_code']} - {course['title']}" for course in self.courses]
         self.course_combo = ttk.Combobox(
             self.window,
             font=("Arial", 10),
             state="readonly",
-            values=[
-                "CS101 - Introduction to Computing",
-                "CS102 - Data Structures",
-                "CS201 - Object-Oriented Programming",
-                "CS202 - Computer Organization",
-                "CS301 - Database Management",
-                "IT101 - Introduction to Information Technology"
-            ]
+            values=values
         )
 
         self.course_combo.pack(
@@ -425,10 +435,10 @@ class AddCompletedCourseDialog:
 
             return
 
-        messagebox.showinfo(
-            "jSON",
-            "sonion",
-            parent=self.window
-        )
-
-        self.window.destroy()
+        try:
+            code = selected_course.split(" - ", 1)[0]
+            if self.on_submit:
+                self.on_submit(self.student_id, code)
+            self.window.destroy()
+        except (ValueError, OSError) as exc:
+            messagebox.showerror("Completed Course", str(exc), parent=self.window)

@@ -3,8 +3,11 @@ import tkinter as tk
 
 class Dashboard:
 
-    def __init__(self, parent):
+    def __init__(self, parent, student_service, course_service, enrollment_service):
         self.parent = parent
+        self.student_service = student_service
+        self.course_service = course_service
+        self.enrollment_service = enrollment_service
 
         self.frame = tk.Frame(
             self.parent,
@@ -25,22 +28,20 @@ class Dashboard:
             pady=10
         )
 
-        # placeholders ========================
         students_card = self.create_stat_card(
             "Total Students",
-            "1,250"
+            str(len(self.student_service.all()))
         )
 
         courses_card = self.create_stat_card(
             "Total Courses",
-            "45"
+            str(len(self.course_service.all()))
         )
 
         enrollments_card = self.create_stat_card(
             "Total Enrollments",
-            "2,340"
+            str(len(self.enrollment_service.all()))
         )
-        # ===================================
 
         students_card.pack(
             side="left",
@@ -144,12 +145,12 @@ class Dashboard:
             padx=10,
             pady=(0, 10)
         )
-        # temporary records, for visualizing what ui look like
-        courses = [
-            ("CS102", "Data Structures", "28/30"),
-            ("CS201", "Object-Oriented Programming", "25/30"),
-            ("CS301", "Database Management", "29/30")
-        ]
+        courses = []
+        for course in self.course_service.all():
+            count = self.enrollment_service.count_for_course(course["course_code"])
+            if course["capacity"] and count / course["capacity"] >= 0.8:
+                courses.append((course["course_code"], course["title"],
+                                f"{count}/{course['capacity']}"))
 
         headers = ["Course Code", "Course Name", "Enrollment"]
 

@@ -4,15 +4,18 @@ from tkinter import ttk, messagebox
 
 from ui.components.dialogs.student_dialogs import (
     StudentRegistrationDialog,
-    ViewStudentDialog
+    ViewStudentDialog,
 )
 
 
 class StudentsPage:
 
-    def __init__(self, parent, student_service=None):
+    def __init__(self, parent, student_service, enrollment_service,
+                 course_service):
         self.parent = parent
         self.student_service = student_service
+        self.enrollment_service = enrollment_service
+        self.course_service = course_service
 
         self.frame = tk.Frame(
             self.parent,
@@ -329,7 +332,7 @@ class StudentsPage:
             self.display_students(self.students)
             return
 
-        student = self.students.get(student_id)
+        student = self.student_service.search(student_id)
 
         if student is None:
 
@@ -346,9 +349,7 @@ class StudentsPage:
             fg="#16803C"
         )
 
-        self.display_students({
-            student_id: student
-        })
+        self.display_students({student["student_id"]: student})
 
     def delete_student(self):
 
@@ -383,22 +384,13 @@ class StudentsPage:
         if not confirm:
             return
 
-        if self.student_service is not None:
-            try:
-                self.student_service.remove(student_id)
-                self.load_students()
-            except Exception as e:
-                messagebox.showerror(
-                    "Delete Failed", str(e),
-                    parent=self.frame.winfo_toplevel()
-                )
-                return
-        else:
-            
-            self.students.pop(student_id, None)
-
-        #4 UI testing only, remove from placeholder data
-        self.students.pop(student_id, None)
+        try:
+            self.enrollment_service.drop_all_for_student(student_id)
+            self.student_service.remove(student_id)
+        except (ValueError, OSError) as exc:
+            messagebox.showerror("Delete Failed", str(exc), parent=self.frame.winfo_toplevel())
+            return
+        self.load_students()
 
         #eset search field
         self.search_entry.delete(0, tk.END)
@@ -418,9 +410,13 @@ class StudentsPage:
 
     def open_registration_dialog(self):
 
-        StudentRegistrationDialog(
-            self.frame.winfo_toplevel()
-        )
+        StudentRegistrationDialog(self.frame, self._register_student)
+
+    def _register_student(self, student_id, name):
+        self.student_service.add(student_id, name)
+        self.load_students()
+        self.display_students(self.students)
+        self.search_result.config(text="Student registered successfully.", fg="#16803C")
 
     def open_view_dialog(self, event=None):
 
@@ -436,31 +432,29 @@ class StudentsPage:
 
         student_id = values[0]
 
-        student = self.students.get(student_id)
+        student = self.student_service.get(student_id)
 
         if student is None:
             return
 
         ViewStudentDialog(
-            self.frame.winfo_toplevel(),
-            student_id,
-            student["name"],
-            student["completed_courses"]
+            self.frame.winfo_toplevel(), student_id, student["name"],
+            student["completed_courses"], self._add_completed_course,
+            self.course_service.all()
         )
+
+    def _add_completed_course(self, student_id, course_code):
+        self.student_service.add_completed_course(student_id, course_code)
+        self.load_students()
+        self.display_students(self.students)
 
     #tempo data 4 UI testing
     def load_students(self):
-        """Load students from the service, or fall back to placeholder data."""
-        if self.student_service is None:
-            self.load_placeholder_students()
-            return
-
+        """Load the real student records from the student service."""
         self.students = {}
         for s in self.student_service.all():
             self.students[s["student_id"]] = {
                 "name": s["name"],
                 "completed_courses": set(s.get("completed_courses", [])),
+                "email": s.get("email", ""),
             }
-
-    #tempo data 4 UI testing
-    def load_placeholder_students(self):

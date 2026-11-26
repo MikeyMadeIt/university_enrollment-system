@@ -5,8 +5,12 @@ from tkinter import ttk
 
 class EnrollmentsPage:
 
-    def __init__(self, parent):
+    def __init__(self, parent, student_service, course_service,
+                 enrollment_service):
         self.parent = parent
+        self.student_service = student_service
+        self.course_service = course_service
+        self.enrollment_service = enrollment_service
 
         # Main page frame
         self.frame = tk.Frame(
@@ -15,7 +19,7 @@ class EnrollmentsPage:
         )
         self.frame.pack(fill="both", expand=True)
 
-        self.load_placeholder_data()
+        self.load_courses()
 
         self.create_header()
         self.create_student_selection()
@@ -326,8 +330,16 @@ class EnrollmentsPage:
 
         student_id = self.student_id_entry.get().strip()
 
-        #will display not found when input is x (4 testing)
-        if student_id == "x":
+        if not student_id:
+            self.student_result.config(
+                text="Please enter a Student ID.",
+                fg="#DC3545"
+            )
+            self.student_name_label.config(text="")
+            return
+
+        student = self.student_service.get(student_id)
+        if not student:
 
             self.student_result.config(
                 text="Student ID does not exist.",
@@ -337,8 +349,7 @@ class EnrollmentsPage:
             self.student_name_label.config(
                 text=""
             )
-        #will display name as long there is an input
-        elif student_id:
+        elif student:
 
             self.student_result.config(
                 text="Student found successfully.",
@@ -346,7 +357,7 @@ class EnrollmentsPage:
             )
 
             self.student_name_label.config(
-                text="Student Name: Lopez, Dhan Paul"
+                text=f"Student Name: {student['name']}"
             )
 
         else:
@@ -371,49 +382,17 @@ class EnrollmentsPage:
                 text="Please enter a Student ID and select a course.",
                 fg="#DC3545"
             )
-        #if chose cs102 will display duplicate error(testing)
-        elif course_code == "CS102":
-            self.enrollment_result.config(
-                text="Enrollment failed: Student has already completed or is enrolled in this course.",
-                fg="#DC3545"
-            )
-
         else:
-            self.enrollment_result.config(
-                text="Enrollment submitted successfully!",
-                fg="#16803C"
-            )
+            try:
+                self.enrollment_service.enroll(student_id, course_code)
+                self.enrollment_result.config(text="Enrollment submitted successfully!", fg="#16803C")
+            except (ValueError, OSError) as exc:
+                self.enrollment_result.config(text=f"Enrollment failed: {exc}", fg="#DC3545")
 
-    def load_placeholder_data(self):
+    def load_courses(self):
         self.courses = {
-
-            "CS101": {
-                "name": "Introduction to Computing"
-            },
-
-            "CS102": {
-                "name": "Data Structures"
-            },
-
-            "CS103": {
-                "name": "Programming 2"
-            },
-
-            "IT101": {
-                "name": "Introduction to Information Technology"
-            },
-
-            "IT102": {
-                "name": "Computer Systems and Architecture"
-            },
-
-            "IT104": {
-                "name": "Computer Systems and Architecture"
-            },
-
-            "IT1052": {
-                "name": "Computer Systems and Architecture"
-            }
+            course["course_code"]: course
+            for course in self.course_service.all()
         }
 
 # Temporary testing

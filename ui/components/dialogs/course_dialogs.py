@@ -1,13 +1,13 @@
-
 import tkinter as tk
 from tkinter import ttk, messagebox
 
 
 class AddCourseDialog:
 
-    def __init__(self, parent, courses):
+    def __init__(self, parent, courses, on_submit=None):
         self.parent = parent
         self.courses = courses
+        self.on_submit = on_submit
 
         self.window = tk.Toplevel(parent)
         self.window.title("Add Course")
@@ -260,9 +260,20 @@ class AddCourseDialog:
             relief="flat",
             padx=15,
             pady=8,
-            cursor="hand2"
+            cursor="hand2",
+            command=self.add_course
         )
         add_button.pack(side="right")
+
+    def add_course(self):
+        prerequisites = sorted(self.get_selected_prerequisites())
+        try:
+            if self.on_submit:
+                self.on_submit(self.code_entry.get(), self.name_entry.get(),
+                               self.capacity_entry.get(), prerequisites)
+            self.window.destroy()
+        except (ValueError, OSError) as exc:
+            messagebox.showerror("Course", str(exc), parent=self.window)
 
     def update_scroll_region(self, event=None):
         self.prerequisite_canvas.configure(
@@ -310,8 +321,15 @@ class EnrolledStudentsDialog:
         course_code,
         course_name,
         enrolled_ids,
-        students
+        students,
+        prerequisites=None,
+        course_catalog=None,
+        on_drop=None
     ):
+        self.course_code = course_code
+        self.on_drop = on_drop
+        self.prerequisites = prerequisites or []
+        self.course_catalog = course_catalog or {}
         self.window = tk.Toplevel(parent)
         self.window.title("Enrolled Students")
         self.window.geometry("650x570")
@@ -335,6 +353,7 @@ class EnrolledStudentsDialog:
         enrolled_ids,
         students
     ):
+        prerequisites = self.prerequisites
 
         title = tk.Label(
             self.window,
@@ -379,30 +398,12 @@ class EnrolledStudentsDialog:
             pady=(0, 15)
         )
 
-        #tempo data 4 testing ui
-        placeholder_prerequisites = {
-            "CS101": [],
-            "CS102": [
-                ("CS101", "Introduction to Computing")
-            ],
-            "CS103": [
-                ("CS101", "Introduction to Computing"),
-                ("CS102", "Data Structures")
-            ],
-            "IT101": [],
-            "IT102": [
-                ("IT101", "Introduction to Information Technology")
-            ]
-        }
-
-        prerequisites = placeholder_prerequisites.get(
-            course_code,
-            []
-        )
-
         if prerequisites:
 
-            for prerequisite_code, prerequisite_name in prerequisites:
+            for prerequisite_code in prerequisites:
+                prerequisite_name = self.course_catalog.get(prerequisite_code, {}).get(
+                    "name", prerequisite_code
+                )
 
                 prerequisite_item = tk.Label(
                     prerequisite_frame,
@@ -582,3 +583,10 @@ class EnrolledStudentsDialog:
             "Are you sure you want to drop the selected student?",
             parent=self.window
         )
+        if confirm and self.on_drop:
+            student_id = self.student_table.item(selected_item[0], "values")[0]
+            try:
+                self.on_drop(student_id, self.course_code)
+                self.window.destroy()
+            except (ValueError, OSError) as exc:
+                messagebox.showerror("Enrollment", str(exc), parent=self.window)

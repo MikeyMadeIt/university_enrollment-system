@@ -1,12 +1,15 @@
 
 import tkinter as tk
-from tkinter import ttk
+from tkinter import messagebox, ttk
 
 
 class RecordsPage:
 
-    def __init__(self, parent):
+    def __init__(self, parent, enrollment_service, student_service, course_service):
         self.parent = parent
+        self.enrollment_service = enrollment_service
+        self.student_service = student_service
+        self.course_service = course_service
 
         self.frame = tk.Frame(
             self.parent,
@@ -14,7 +17,7 @@ class RecordsPage:
         )
         self.frame.pack(fill="both", expand=True)
 
-        self.load_placeholder_data()
+        self.load_enrollment_records()
 
         self.create_header()
         self.create_enrollment_table()
@@ -166,13 +169,20 @@ class RecordsPage:
             fill="x",
             expand=True
         )
+        self.enrollment_table.bind(
+            "<Delete>",
+            lambda _event: self.drop_selected()
+        )
 
         scrollbar.pack(
             side="right",
             fill="y"
         )
 
-        # Insert placeholder records
+        self._populate_records()
+
+    def _populate_records(self):
+        self.enrollment_table.delete(*self.enrollment_table.get_children())
         for record in self.enrollment_records:
 
             student_text = (
@@ -188,12 +198,30 @@ class RecordsPage:
             self.enrollment_table.insert(
                 "",
                 "end",
+                iid=f"{record['student_id']}::{record['course_code']}",
                 values=(
                     student_text,
                     course_text,
-                    record["timestamp"]
+                    record.get("timestamp") or ""
                 )
             )
+
+    def drop_selected(self):
+        selected = self.enrollment_table.selection()
+        if not selected:
+            messagebox.showwarning("No Enrollment Selected", "Select an enrollment to drop.",
+                                   parent=self.frame.winfo_toplevel())
+            return
+        student_id, course_code = selected[0].split("::", 1)
+        if not messagebox.askyesno("Confirm Drop", f"Drop {student_id} from {course_code}?",
+                                   parent=self.frame.winfo_toplevel()):
+            return
+        try:
+            self.enrollment_service.drop(student_id, course_code)
+            self.load_enrollment_records()
+            self._populate_records()
+        except (ValueError, OSError) as exc:
+            messagebox.showerror("Enrollment", str(exc), parent=self.frame.winfo_toplevel())
 
     def create_student_search(self):
 
@@ -378,18 +406,16 @@ class RecordsPage:
             )
             return
 
-        #input "x" displays student not found (testing)
-        if student_id == "x":
+        student = self.student_service.get(student_id)
+        if student is None:
             self.search_result.config(
                 text="Student not found.",
                 fg="#DC3545"
             )
             return
 
-        # Display placeholder student for any other input
-        student_records = self.enrollment_records
-
-        student_name = student_records[0]["student_name"]
+        student_records = self.enrollment_service.for_student(student_id)
+        student_name = student["name"]
 
         self.search_result.config(
             text="Student records found successfully.",
@@ -400,12 +426,11 @@ class RecordsPage:
             text=f"Student: {student_name}"
         )
 
-        # Display all placeholder enrolled courses
+        # Display all courses actually recorded for this student.
         for record in student_records:
-            course_text = (
-                f"{record['course_code']} - "
-                f"{record['course_name']}"
-            )
+            course = self.course_service.get(record["course_code"])
+            course_name = course["title"] if course else "Unknown course"
+            course_text = f"{record['course_code']} - {course_name}"
 
             course_frame = tk.Frame(
                 self.course_result_frame,
@@ -442,42 +467,13 @@ class RecordsPage:
 
         self.course_canvas.yview_moveto(0)
 
-    #tempo data for ui testing only
-    def load_placeholder_data(self):
-        self.enrollment_records = [
-            {
-                "student_id": "2026-001",
-                "student_name": "Lopez, Dhan Paul",
-                "course_code": "CS101",
-                "course_name": "Introduction to Computing",
-                "timestamp": "Nov 20, 2026, 10:30 AM",
-                "schedule": "TBA"
-            },
-
-            {
-                "student_id": "2026-001",
-                "student_name": "Lopez, Dhan Paul",
-                "course_code": "CS101",
-                "course_name": "Introduction to Computing",
-                "timestamp": "Nov 20, 2026, 10:30 AM",
-                "schedule": "TBA"
-            },
-
-            {
-                "student_id": "2026-001",
-                "student_name": "Lopez, Dhan Paul",
-                "course_code": "CS101",
-                "course_name": "Introduction to Computing",
-                "timestamp": "Nov 20, 2026, 10:30 AM",
-                "schedule": "TBA"
-            },
-
-            {
-                "student_id": "2026-001",
-                "student_name": "Lopez, Dhan Paul",
-                "course_code": "IT101",
-                "course_name": "Introduction to Information Technology",
-                "timestamp": "Nov 20, 2026, 1:00 PM",
-                "schedule": "TBA"
-            },
-        ]
+    def load_enrollment_records(self):
+        self.enrollment_records = []
+        for enrollment in self.enrollment_service.all():
+            student = self.student_service.get(enrollment["student_id"])
+            course = self.course_service.get(enrollment["course_code"])
+            self.enrollment_records.append({
+                **enrollment,
+                "student_name": student["name"] if student else "Unknown student",
+                "course_name": course["title"] if course else "Unknown course",
+            })

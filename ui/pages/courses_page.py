@@ -1,17 +1,21 @@
 
 import tkinter as tk
-from tkinter import ttk
+from tkinter import messagebox, ttk
 
 from ui.components.dialogs.course_dialogs import (
     AddCourseDialog,
-    EnrolledStudentsDialog
+    EnrolledStudentsDialog,
 )
 
 
 class CoursesPage:
 
-    def __init__(self, parent):
+    def __init__(self, parent, course_service, enrollment_service,
+                 student_service):
         self.parent = parent
+        self.course_service = course_service
+        self.enrollment_service = enrollment_service
+        self.student_service = student_service
 
         self.frame = tk.Frame(
             self.parent,
@@ -19,8 +23,8 @@ class CoursesPage:
         )
         self.frame.pack(fill="both", expand=True)
 
-        self.load_placeholder_courses()
-        self.load_placeholder_students()
+        self.load_courses()
+        self.load_students()
 
         self.create_header()
         self.create_search_bar()
@@ -77,6 +81,9 @@ class CoursesPage:
             0,
             "Search by course code"
         )
+        self.search_entry.config(fg="#888888")
+        self.search_entry.bind("<FocusIn>", self.clear_search_placeholder)
+        self.search_entry.bind("<FocusOut>", self.restore_search_placeholder)
 
         # Search button
         search_button = tk.Button(
@@ -90,7 +97,8 @@ class CoursesPage:
             relief="flat",
             padx=20,
             pady=8,
-            cursor="hand2"
+            cursor="hand2",
+            command=self.search_courses
         )
         search_button.pack(side="right")
 
@@ -179,7 +187,7 @@ class CoursesPage:
             anchor="center"
         )
 
-        # Insert placeholder course records
+        # Display course records loaded from the course and enrollment services.
         for course_code, details in self.courses.items():
 
             self.course_tree.insert(
@@ -225,6 +233,10 @@ class CoursesPage:
             "<Double-1>",
             self.open_enrolled_students
         )
+        self.course_tree.bind(
+            "<Delete>",
+            lambda _event: self.delete_selected_course()
+        )
 
         # Add Course button below the table
         add_button = tk.Button(
@@ -248,12 +260,67 @@ class CoursesPage:
             pady=(0, 20)
         )
 
-    def open_add_course_dialog(self):
+    def clear_search_placeholder(self, _event=None):
+        if self.search_entry.get() == "Search by course code":
+            self.search_entry.delete(0, tk.END)
+            self.search_entry.config(fg="#333333")
 
-        AddCourseDialog(
-            self.frame,
-            self.courses
-        )
+    def restore_search_placeholder(self, _event=None):
+        if not self.search_entry.get().strip():
+            self.search_entry.insert(0, "Search by course code")
+            self.search_entry.config(fg="#888888")
+
+    def open_add_course_dialog(self):
+        AddCourseDialog(self.frame, self.courses, self._add_course)
+
+    def _add_course(self, code, title, capacity, prerequisites):
+        self.course_service.add(code, title, capacity, prerequisites)
+        self.refresh_courses()
+
+    def search_courses(self):
+        query = self.search_entry.get().strip()
+        if query == "Search by course code":
+            query = ""
+        if not query:
+            self.refresh_courses()
+            return
+        results = self.course_service.search(query)
+        self.display_courses(results)
+
+    def delete_selected_course(self):
+        selected = self.course_tree.selection()
+        if not selected:
+            messagebox.showwarning("No Course Selected", "Select a course to delete.",
+                                   parent=self.frame.winfo_toplevel())
+            return
+        code = self.course_tree.item(selected[0], "values")[0]
+        if self.course_service.has_dependents(code):
+            messagebox.showerror("Course", f"{code} is a prerequisite for another course.",
+                                 parent=self.frame.winfo_toplevel())
+            return
+        if not messagebox.askyesno("Confirm Deletion", f"Delete course {code} and its enrollments?",
+                                   parent=self.frame.winfo_toplevel()):
+            return
+        try:
+            self.enrollment_service.drop_all_for_course(code)
+            self.course_service.remove(code)
+            self.refresh_courses()
+        except (ValueError, OSError) as exc:
+            messagebox.showerror("Delete Failed", str(exc), parent=self.frame.winfo_toplevel())
+
+    def display_courses(self, courses):
+        for item in self.course_tree.get_children():
+            self.course_tree.delete(item)
+        for row in courses:
+            code = row["course_code"]
+            enrolled = self.enrollment_service.count_for_course(code)
+            self.course_tree.insert("", "end", iid=code, values=(
+                code, row["title"], row["capacity"], enrolled
+            ))
+
+    def refresh_courses(self):
+        self.load_courses()
+        self.display_courses(self.course_service.all())
 
     def open_enrolled_students(self, event=None):
 
@@ -262,73 +329,32 @@ class CoursesPage:
         if not selected_item:
             return
 
-        course_code = selected_item[0]
-        course_details = self.courses[course_code]
-
+        course_code = self.course_tree.item(selected_item[0], "values")[0]
+        course_details = self.course_service.get(course_code)
+        records = self.enrollment_service.for_course(course_code)
+        enrolled_ids = [row["student_id"] for row in records]
         EnrolledStudentsDialog(
-            self.frame,
-            course_code,
-            course_details["name"],
-            course_details["enrolled"],
-            self.students
+            self.frame, course_code, course_details["title"], enrolled_ids,
+            self.students, course_details.get("prerequisites", []), self.courses,
+            self._drop_enrolled_student
         )
 
-    # Temporary data for UI testing
-    def load_placeholder_courses(self):
+    def _drop_enrolled_student(self, student_id, course_code):
+        self.enrollment_service.drop(student_id, course_code)
+        self.refresh_courses()
 
-        self.courses = {
-
-            "CS101": {
-                "name": "Introduction to Computing",
-                "capacity": 40,
-                "enrolled": {"2026-001", "2026-002"},
-                "prerequisites": set()
-            },
-
-            "CS102": {
-                "name": "Data Structures",
-                "capacity": 30,
-                "enrolled": set(),
-                "prerequisites": {"CS101"}
-            },
-
-            "CS103": {
-                "name": "Programming 2",
-                "capacity": 35,
-                "enrolled": set(),
-                "prerequisites": {"CS102"}
-            },
-
-            "IT101": {
-                "name": "Introduction to Information Technology",
-                "capacity": 40,
-                "enrolled": set(),
-                "prerequisites": set()
-            },
-
-            "IT102": {
-                "name": "Computer Systems and Architecture",
-                "capacity": 40,
-                "enrolled": set(),
-                "prerequisites": {"IT101"}
+    def load_courses(self):
+        self.courses = {}
+        for course in self.course_service.all():
+            code = course["course_code"]
+            self.courses[code] = {
+                "name": course["title"], "capacity": course["capacity"],
+                "enrolled": {row["student_id"] for row in self.enrollment_service.for_course(code)},
+                "prerequisites": set(course.get("prerequisites", [])),
             }
-        }
 
-    # Temporary data for UI testing
-    def load_placeholder_students(self):
-
-        self.students = {
-
-            "2026-001": {
-                "name": "Lopez, Dhan Paul",
-                "completed_courses": set()
-            },
-
-            "2026-002": {
-                "name": "Lopez, Dhan Paul",
-                "completed_courses": set()
-            }
-        }
+    def load_students(self):
+        self.students = {row["student_id"]: row for row in self.student_service.all()}
 
 
 # Testing
