@@ -1,9 +1,16 @@
-from algorithms.bfs import bfs, bfs_levels
-from algorithms.dfs import dfs
-from algorithms.prerequisite_graph import build_prerequisite_graph
-from algorithms.searching import linear_search_by_id, linear_search_by_name, search_courses_by_keyword
-from algorithms.sorting import bubble_sort, merge_sort
-from algorithms.topological_sort import topological_sort
+from algorithms import (
+    bfs,
+    bfs_levels,
+    bubble_sort,
+    bubble_sort_by_name,
+    bubble_sort_courses_by_capacity,
+    build_prerequisite_graph,
+    dfs,
+    linear_search_by_id,
+    linear_search_by_name,
+    search_courses_by_keyword,
+    topological_sort,
+)
 
 
 def test_graph_traversals_and_course_order():
@@ -27,7 +34,20 @@ def test_original_search_and_sort_functions():
     assert linear_search_by_id({"S1": students[0]}, "S1")["name"] == "Alice"
     courses = {"CS101": {"name": "Intro Programming"}, "MA101": {"name": "Math"}}
     assert search_courses_by_keyword(courses, "programming")[0][0] == "CS101"
-    rows = [{"name": "Zed"}, {"name": "Amy"}]
-    assert [row["name"] for row in bubble_sort(rows, "name")] == ["Amy", "Zed"]
-    caps = [{"capacity": 30}, {"capacity": 10}, {"capacity": 20}]
-    assert [row["capacity"] for row in merge_sort(caps, "capacity")] == [10, 20, 30]
+    rows = [{"name": "Zed"}, {"name": "amy"}]
+    assert [row["name"] for row in bubble_sort(rows, "name")] == ["amy", "Zed"]
+    assert [row["name"] for row in bubble_sort_by_name(rows)] == ["amy", "Zed"]
+    assert [row["name"] for row in rows] == ["Zed", "amy"]
+    records_with_missing_names = [{"name": "Zed"}, {}, {"name": "Amy"}]
+    assert [row.get("name") for row in bubble_sort(records_with_missing_names, "name")] == [
+        "Amy", "Zed", None
+    ]
+
+    courses = [
+        ("CS101", {"capacity": 30}),
+        ("CS102", {"capacity": 10}),
+        ("CS201", {"capacity": 20}),
+    ]
+    assert [code for code, _ in bubble_sort_courses_by_capacity(courses)] == [
+        "CS102", "CS201", "CS101"
+    ]
