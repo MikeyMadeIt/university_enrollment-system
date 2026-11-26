@@ -12,8 +12,19 @@ from .pages.enrollments_page import EnrollmentsPage
 
 class MainWindow:
 
-    def __init__(self, root):
+    def __init__(self, root, student_service, course_service, enrollment_service):
         self.root = root
+        self.student_service = student_service
+        self.course_service = course_service
+        self.enrollment_service = enrollment_service
+    
+    
+    def __init__(self, root, student_service=None,
+                course_service=None, enrollment_service=None):
+        self.root = root
+        self.student_service = student_service
+        self.course_service = course_service
+        self.enrollment_service = enrollment_service
 
         self.root.title("QCU - Course Registration System")
         self.root.geometry("1280x800")
@@ -63,22 +74,19 @@ class MainWindow:
         self.show_page("Dashboard")
 
     def show_page(self, page_name):
+        
 
         # Clear previous page
+    def show_page(self, page_name):
         for widget in self.page_container.winfo_children():
             widget.destroy()
-
         if page_name == "Dashboard":
-            Dashboard(self.page_container)
-
+            Dashboard(self.page_container, self.student_service, self.course_service, self.enrollment_service)
         elif page_name == "Students":
-            StudentsPage(self.page_container)
-
+            StudentsPage(self.page_container, self.student_service)
         elif page_name == "Courses":
-            CoursesPage(self.page_container)
-
+            CoursesPage(self.page_container, self.course_service, self.enrollment_service)
         elif page_name == "Enrollments":
-            EnrollmentsPage(self.page_container)
-
+            EnrollmentsPage(self.page_container, self.student_service, self.course_service, self.enrollment_service)
         elif page_name == "Records":
-            RecordsPage(self.page_container)
+            RecordsPage(self.page_container, self.enrollment_service, self.student_service, self.course_service)

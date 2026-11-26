@@ -1,0 +1,31 @@
+[
+  {
+    "course_code": "CS101",
+    "title": "Intro to Programming",
+    "capacity": 30,
+    "prerequisites": []
+  },
+  {
+    "course_code": "MA101",
+    "title": "Calculus I",
+    "capacity": 40,
+    "prerequisites": []
+  },
+  {
+    "course_code": "CS102",
+    "title": "Data Structures",
+    "capacity": 25,
+    "prerequisites": [
+      "CS101"
+    ]
+  },
+  {
+    "course_code": "CS201",
+    "title": "Algorithms",
+    "capacity": 20,
+    "prerequisites": [
+      "CS102",
+      "MA101"
+    ]
+  }
+]

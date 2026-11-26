@@ -1,28 +1,30 @@
-# This file has sorting functions - we implement our own sort (bubble sort)
-# instead of using Python's built-in sorted() or .sort()
-
-def bubble_sort_by_name(records):
-    sorted_list = list(records)
-    n = len(sorted_list)
-
+def bubble_sort(items, key):
+    arr = list(items)
+    n = len(arr)
     for i in range(n):
-        for j in range(0, n - i - 1):
-            name1 = sorted_list[j]["name"].lower()
-            name2 = sorted_list[j + 1]["name"].lower()
-            if name1 > name2:
-                sorted_list[j], sorted_list[j + 1] = sorted_list[j + 1], sorted_list[j]
+        for j in range(n - 1 - i):
+            if arr[j].get(key) > arr[j + 1].get(key):
+                arr[j], arr[j + 1] = arr[j + 1], arr[j]
+    return arr
 
-    return sorted_list
 
-def bubble_sort_courses_by_capacity(courses_list):
-    sorted_list = list(courses_list)
-    n = len(sorted_list)
+def merge_sort(items, key):
+    items = list(items)
+    if len(items) <= 1:
+        return items
+    mid = len(items) // 2
+    left = merge_sort(items[:mid], key)
+    right = merge_sort(items[mid:], key)
+    return _merge(left, right, key)
 
-    for i in range(n):
-        for j in range(0, n - i - 1):
-            cap1 = sorted_list[j][1]["capacity"]
-            cap2 = sorted_list[j + 1][1]["capacity"]
-            if cap1 > cap2:
-                sorted_list[j], sorted_list[j + 1] = sorted_list[j + 1], sorted_list[j]
 
-    return sorted_list
+def _merge(left, right, key):
+    result, i, j = [], 0, 0
+    while i < len(left) and j < len(right):
+        if left[i].get(key) <= right[j].get(key):
+            result.append(left[i]); i += 1
+        else:
+            result.append(right[j]); j += 1
+    result.extend(left[i:])
+    result.extend(right[j:])
+    return result

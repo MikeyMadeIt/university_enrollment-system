@@ -10,8 +10,9 @@ from ui.components.dialogs.student_dialogs import (
 
 class StudentsPage:
 
-    def __init__(self, parent):
+    def __init__(self, parent, student_service=None):
         self.parent = parent
+        self.student_service = student_service
 
         self.frame = tk.Frame(
             self.parent,
@@ -22,7 +23,7 @@ class StudentsPage:
 
         self.create_header()
         self.create_search_bar()
-        self.load_placeholder_students()
+        self.load_students()
         self.create_student_table()
         self.create_bottom_button()
 
@@ -382,6 +383,20 @@ class StudentsPage:
         if not confirm:
             return
 
+        if self.student_service is not None:
+            try:
+                self.student_service.remove(student_id)
+                self.load_students()
+            except Exception as e:
+                messagebox.showerror(
+                    "Delete Failed", str(e),
+                    parent=self.frame.winfo_toplevel()
+                )
+                return
+        else:
+            
+            self.students.pop(student_id, None)
+
         #4 UI testing only, remove from placeholder data
         self.students.pop(student_id, None)
 
@@ -434,14 +449,18 @@ class StudentsPage:
         )
 
     #tempo data 4 UI testing
-    def load_placeholder_students(self):
+    def load_students(self):
+        """Load students from the service, or fall back to placeholder data."""
+        if self.student_service is None:
+            self.load_placeholder_students()
+            return
 
-        self.students = {
-            f"2026-{i:03d}": {
-                "name": "Lopez, Dhan Paul",
-                "completed_courses": (
-                    {"CS101", "CS102"} if i != 3 else set()
-                )
+        self.students = {}
+        for s in self.student_service.all():
+            self.students[s["student_id"]] = {
+                "name": s["name"],
+                "completed_courses": set(s.get("completed_courses", [])),
             }
-            for i in range(1, 27)
-        }
+
+    #tempo data 4 UI testing
+    def load_placeholder_students(self):

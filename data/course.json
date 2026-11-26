@@ -1,0 +1,8 @@
+[
+  {
+    "course_code": "CS101",
+    "title": "Intro to Programming",
+    "capacity": 30,
+    "prerequisites": []
+  }
+]
