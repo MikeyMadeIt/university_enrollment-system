@@ -1,140 +1,371 @@
+
 import tkinter as tk
 from tkinter import messagebox, ttk
 
-from algorithms.sorting import bubble_sort
-from ui.components.dialogs import confirm, course_form, show_enrolled_students, show_error
-
-
-BLUE, PAGE, WHITE = "#07549C", "#F1F3F5", "#FFFFFF"
+from ui.components.dialogs import (
+    confirm, course_form, show_enrolled_students, show_error,
+)
 
 
 class CoursesPage:
-    def __init__(self, parent, course_service, enrollment_service, student_service=None, on_change=None):
+
+    def __init__(self, parent, course_service, enrollment_service,
+                 student_service, on_change=None):
         self.parent = parent
-        self.courses = course_service
-        self.enrollments = enrollment_service
-        self.students = student_service
+        self.course_service = course_service
+        self.enrollment_service = enrollment_service
+        self.student_service = student_service
         self.on_change = on_change
-        self.frame = tk.Frame(parent, bg=PAGE)
+
+        self.frame = tk.Frame(
+            self.parent,
+            bg="#F1F3F5"
+        )
         self.frame.pack(fill="both", expand=True)
-        self._build()
 
-    def _build(self):
-        tk.Label(self.frame, text="Courses", font=("Arial", 22, "bold"),
-                 bg=PAGE, fg=BLUE).pack(anchor="w", padx=25, pady=(25, 5))
-        tk.Label(self.frame, text="Manage available courses and course information",
-                 font=("Arial", 10), bg=PAGE, fg="#555555").pack(anchor="w", padx=25)
+        self.load_courses()
+        self.load_students()
 
-        search = tk.Frame(self.frame, bg=PAGE)
-        search.pack(fill="x", padx=25, pady=20)
-        self.query = tk.StringVar()
-        self.search_entry = tk.Entry(search, textvariable=self.query, font=("Arial", 11),
-                                     relief="solid", bd=1)
-        self.search_entry.pack(side="left", fill="x", expand=True, ipady=8, padx=(0, 10))
-        self._button(search, "Search", self.search, primary=True).pack(side="right")
-        self.search_entry.bind("<Return>", lambda _event: self.search())
-        self.result = tk.Label(self.frame, text="", font=("Arial", 9), bg=PAGE, fg="#DC3545")
-        self.result.pack(anchor="w", padx=25, pady=(0, 5))
+        self.create_header()
+        self.create_search_bar()
+        self.create_course_table()
 
-        panel = tk.Frame(self.frame, bg=WHITE)
-        panel.pack(fill="both", expand=True, padx=25, pady=(0, 10))
-        tk.Label(panel, text="Available Courses", font=("Arial", 14, "bold"),
-                 bg=WHITE, fg=BLUE).pack(anchor="w", padx=15, pady=12)
-        columns = ("course_code", "title", "capacity", "enrollment", "prerequisites")
-        self.tree = ttk.Treeview(panel, columns=columns, show="headings", height=12)
-        for col, title, width, anchor in (
-            ("course_code", "Course Code", 120, "center"), ("title", "Course Name", 250, "w"),
-            ("capacity", "Capacity", 100, "center"), ("enrollment", "Enrolled", 110, "center"),
-            ("prerequisites", "Prerequisites", 270, "w"),
-        ):
-            self.tree.heading(col, text=title)
-            self.tree.column(col, width=width, anchor=anchor)
-        scrollbar = ttk.Scrollbar(panel, orient="vertical", command=self.tree.yview)
-        self.tree.configure(yscrollcommand=scrollbar.set)
-        self.tree.pack(side="left", fill="both", expand=True, padx=(15, 0), pady=(0, 15))
-        scrollbar.pack(side="right", fill="y", padx=(0, 15), pady=(0, 15))
-        self.tree.bind("<Double-1>", self.show_students)
+    def create_header(self):
 
-        actions = tk.Frame(self.frame, bg=PAGE)
-        actions.pack(fill="x", padx=25, pady=(0, 20))
-        self._button(actions, "Sort by capacity", self.sort_capacity).pack(side="left")
-        self._button(actions, "Show enrolled students", self.show_students).pack(side="left", padx=10)
-        self._button(actions, "Delete Course", self.delete, danger=True).pack(side="right", padx=(0, 10))
-        self._button(actions, "+ Add Course", self.open_add_course_dialog, primary=True).pack(side="right")
-        self.refresh()
+        title = tk.Label(
+            self.frame,
+            text="Courses",
+            font=("Arial", 22, "bold"),
+            bg="#F1F3F5",
+            fg="#07549C"
+        )
+        title.pack(anchor="w", padx=25, pady=(25, 5))
 
-    @staticmethod
-    def _button(parent, text, command, primary=False, danger=False):
-        bg = "#DC3545" if danger else (BLUE if primary else "#E5E7EB")
-        fg = WHITE if primary or danger else "#333333"
-        return tk.Button(parent, text=text, command=command, font=("Arial", 10, "bold"),
-                         bg=bg, fg=fg, activebackground="#06447D" if primary else bg,
-                         activeforeground=WHITE if primary or danger else fg,
-                         relief="flat", padx=15, pady=8, cursor="hand2")
+        subtitle = tk.Label(
+            self.frame,
+            text="Manage available courses and course information",
+            font=("Arial", 10),
+            bg="#F1F3F5",
+            fg="#555555"
+        )
+        subtitle.pack(anchor="w", padx=25)
+
+    def create_search_bar(self):
+
+        search_frame = tk.Frame(
+            self.frame,
+            bg="#F1F3F5"
+        )
+        search_frame.pack(
+            fill="x",
+            padx=25,
+            pady=20
+        )
+
+        # Search input
+        self.search_entry = tk.Entry(
+            search_frame,
+            font=("Arial", 11),
+            relief="solid",
+            bd=1
+        )
+        self.search_entry.pack(
+            side="left",
+            fill="x",
+            expand=True,
+            ipady=8,
+            padx=(0, 10)
+        )
+
+        self.search_entry.insert(
+            0,
+            "Search by course code"
+        )
+        self.search_entry.config(fg="#888888")
+        self.search_entry.bind("<FocusIn>", self.clear_search_placeholder)
+        self.search_entry.bind("<FocusOut>", self.restore_search_placeholder)
+
+        # Search button
+        search_button = tk.Button(
+            search_frame,
+            text="Search",
+            font=("Arial", 10, "bold"),
+            bg="#07549C",
+            fg="#FFFFFF",
+            activebackground="#06447D",
+            activeforeground="#FFFFFF",
+            relief="flat",
+            padx=20,
+            pady=8,
+            cursor="hand2",
+            command=self.search_courses
+        )
+        search_button.pack(side="right")
+
+    def create_course_table(self):
+
+        # Table container
+        table_frame = tk.Frame(
+            self.frame,
+            bg="#FFFFFF"
+        )
+        table_frame.pack(
+            fill="both",
+            expand=True,
+            padx=25,
+            pady=(0, 10)
+        )
+
+        # Table title
+        table_title = tk.Label(
+            table_frame,
+            text="Available Courses",
+            font=("Arial", 14, "bold"),
+            bg="#FFFFFF",
+            fg="#07549C"
+        )
+        table_title.pack(
+            anchor="w",
+            padx=15,
+            pady=15
+        )
+
+        columns = (
+            "course_code",
+            "course_name",
+            "capacity",
+            "enrolled"
+        )
+
+        self.course_tree = ttk.Treeview(
+            table_frame,
+            columns=columns,
+            show="headings"
+        )
+
+        self.course_tree.heading(
+            "course_code",
+            text="Course Code"
+        )
+
+        self.course_tree.heading(
+            "course_name",
+            text="Course Name"
+        )
+
+        self.course_tree.heading(
+            "capacity",
+            text="Capacity"
+        )
+
+        self.course_tree.heading(
+            "enrolled",
+            text="Enrolled"
+        )
+
+        self.course_tree.column(
+            "course_code",
+            width=130,
+            anchor="center"
+        )
+
+        self.course_tree.column(
+            "course_name",
+            width=300,
+            anchor="w"
+        )
+
+        self.course_tree.column(
+            "capacity",
+            width=120,
+            anchor="center"
+        )
+
+        self.course_tree.column(
+            "enrolled",
+            width=120,
+            anchor="center"
+        )
+
+        # Display course records loaded from the course and enrollment services.
+        for course_code, details in self.courses.items():
+
+            self.course_tree.insert(
+                "",
+                "end",
+                iid=course_code,
+                values=(
+                    course_code,
+                    details["name"],
+                    details["capacity"],
+                    len(details["enrolled"])
+                )
+            )
+
+        # Scrollbar
+        scrollbar = ttk.Scrollbar(
+            table_frame,
+            orient="vertical",
+            command=self.course_tree.yview
+        )
+
+        self.course_tree.configure(
+            yscrollcommand=scrollbar.set
+        )
+
+        self.course_tree.pack(
+            side="left",
+            fill="both",
+            expand=True,
+            padx=(15, 0),
+            pady=(0, 15)
+        )
+
+        scrollbar.pack(
+            side="right",
+            fill="y",
+            padx=(0, 15),
+            pady=(0, 15)
+        )
+
+        # Double-click event
+        self.course_tree.bind(
+            "<Double-1>",
+            self.open_enrolled_students
+        )
+
+        # Add Course button below the table
+        add_button = tk.Button(
+            self.frame,
+            text="+ Add Course",
+            font=("Arial", 10, "bold"),
+            bg="#07549C",
+            fg="#FFFFFF",
+            activebackground="#06447D",
+            activeforeground="#FFFFFF",
+            relief="flat",
+            padx=15,
+            pady=8,
+            cursor="hand2",
+            command=self.open_add_course_dialog
+        )
+
+        add_button.pack(
+            anchor="e",
+            padx=25,
+            pady=(0, 20)
+        )
+
+        delete_button = tk.Button(
+            self.frame, text="Delete Selected Course", font=("Arial", 10, "bold"),
+            bg="#DC3545", fg="#FFFFFF", activebackground="#B02A37",
+            activeforeground="#FFFFFF", relief="flat", padx=15, pady=8,
+            cursor="hand2", command=self.delete_selected_course
+        )
+        delete_button.pack(anchor="e", padx=25, pady=(0, 15))
+
+    def clear_search_placeholder(self, _event=None):
+        if self.search_entry.get() == "Search by course code":
+            self.search_entry.delete(0, tk.END)
+            self.search_entry.config(fg="#333333")
+
+    def restore_search_placeholder(self, _event=None):
+        if not self.search_entry.get().strip():
+            self.search_entry.insert(0, "Search by course code")
+            self.search_entry.config(fg="#888888")
 
     def open_add_course_dialog(self):
-        course_form(self.frame, self._add_course)
+        course_form(self.frame, self.courses, self._add_course)
 
     def _add_course(self, code, title, capacity, prerequisites):
-        self.courses.add(code, title, capacity, prerequisites.split(","))
-        self.refresh()
-        self.result.config(text="Course added successfully.", fg="#16803C")
+        self.course_service.add(code, title, capacity, prerequisites)
+        self.load_courses()
+        self.refresh_courses()
         if self.on_change:
             self.on_change()
 
-    def search(self):
-        query = self.query.get().strip()
+    def search_courses(self):
+        query = self.search_entry.get().strip()
+        if query == "Search by course code":
+            query = ""
         if not query:
-            self.result.config(text="Please enter a course code or keyword.", fg="#DC3545")
-            self.refresh()
+            self.refresh_courses()
             return
-        rows = self.courses.search(query)
-        self._show(rows)
-        self.result.config(text=f"{len(rows)} course(s) found." if rows else "No matching courses found.",
-                           fg="#16803C" if rows else "#DC3545")
+        results = self.course_service.search(query)
+        self.display_courses(results)
 
-    def sort_capacity(self):
-        self._show(bubble_sort(self.courses.all(), "capacity"))
-
-    def show_students(self, _event=None):
-        selected = self.tree.selection()
+    def delete_selected_course(self):
+        selected = self.course_tree.selection()
         if not selected:
+            messagebox.showwarning("No Course Selected", "Select a course to delete.",
+                                   parent=self.frame.winfo_toplevel())
             return
-        code = self.tree.item(selected[0], "values")[0]
-        course = self.courses.get(code)
-        enrolled = self.enrollments.for_course(code)
-        students = [self.students.get(row["student_id"]) if self.students else None for row in enrolled]
-        students = [student or {"student_id": row["student_id"], "name": "Unknown"}
-                    for row, student in zip(enrolled, students)]
-        show_enrolled_students(self.frame, code, course["title"], students)
-
-    def delete(self):
-        selected = self.tree.selection()
-        if not selected:
-            messagebox.showwarning("No Course Selected", "Please select a course to delete.", parent=self.frame)
+        code = self.course_tree.item(selected[0], "values")[0]
+        if self.course_service.has_dependents(code):
+            messagebox.showerror("Course", f"{code} is a prerequisite for another course.",
+                                 parent=self.frame.winfo_toplevel())
             return
-        code = self.tree.item(selected[0], "values")[0]
-        if self.courses.has_dependents(code):
-            messagebox.showerror("Course", f"{code} is a prerequisite for another course.", parent=self.frame)
-            return
-        if not confirm(self.frame, "Confirm Deletion", f"Delete course {code} and its active enrollments?"):
+        if not messagebox.askyesno("Confirm Deletion", f"Delete course {code} and its enrollments?",
+                                   parent=self.frame.winfo_toplevel()):
             return
         try:
-            self.enrollments.drop_all_for_course(code)
-            self.courses.remove(code)
-            self.refresh()
+            self.enrollment_service.drop_all_for_course(code)
+            self.course_service.remove(code)
+            self.refresh_courses()
             if self.on_change:
                 self.on_change()
         except (ValueError, OSError) as exc:
             show_error(self.frame, "Delete Failed", exc)
 
-    def refresh(self):
-        self._show(self.courses.all())
+    def display_courses(self, courses):
+        for item in self.course_tree.get_children():
+            self.course_tree.delete(item)
+        for row in courses:
+            code = row["course_code"]
+            enrolled = self.enrollment_service.count_for_course(code)
+            self.course_tree.insert("", "end", iid=code, values=(
+                code, row["title"], row["capacity"], enrolled
+            ))
 
-    def _show(self, rows):
-        self.tree.delete(*self.tree.get_children())
-        for row in rows:
-            count = self.enrollments.count_for_course(row["course_code"])
-            self.tree.insert("", "end", values=(row["course_code"], row["title"], row["capacity"],
-                                                    f"{count}/{row['capacity']}",
-                                                    ", ".join(row.get("prerequisites", []))))
+    def refresh_courses(self):
+        self.load_courses()
+        self.display_courses(self.course_service.all())
+
+    def open_enrolled_students(self, event=None):
+
+        selected_item = self.course_tree.selection()
+
+        if not selected_item:
+            return
+
+        course_code = self.course_tree.item(selected_item[0], "values")[0]
+        course_details = self.course_service.get(course_code)
+        records = self.enrollment_service.for_course(course_code)
+        students = [self.student_service.get(row["student_id"]) for row in records]
+        show_enrolled_students(self.frame, course_code, course_details["title"],
+                               [row for row in students if row])
+
+    def load_courses(self):
+        self.courses = {}
+        for course in self.course_service.all():
+            code = course["course_code"]
+            self.courses[code] = {
+                "name": course["title"], "capacity": course["capacity"],
+                "enrolled": {row["student_id"] for row in self.enrollment_service.for_course(code)},
+                "prerequisites": set(course.get("prerequisites", [])),
+            }
+
+    def load_students(self):
+        self.students = {row["student_id"]: row for row in self.student_service.all()}
+
+
+# Testing
+# if __name__ == "__main__":
+#
+#     root = tk.Tk()
+#     root.title("QCU Enrollment System")
+#     root.geometry("1000x650")
+#
+#     CoursesPage(root)
+#
+#     root.mainloop()
