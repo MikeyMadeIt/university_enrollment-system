@@ -1,49 +1,51 @@
-"""Bubble-sort helpers used by the enrollment application."""
-
-
-def _order_value(value):
-    """Compare text without regard to case while leaving other values intact."""
-    return value.casefold() if isinstance(value, str) else value
-
+# This file has sorting functions - we implement our own sort (bubble sort)
+# instead of using Python's built-in sorted() or .sort()
 
 def bubble_sort(items, key):
-    """Return a stable copy of mapping records sorted by ``key``."""
-    sorted_items = list(items)
-    count = len(sorted_items)
+    sorted_list = list(items)
+    n = len(sorted_list)
 
-    for i in range(count):
-        swapped = False
-        for j in range(count - i - 1):
-            left = _order_value(sorted_items[j].get(key))
-            right = _order_value(sorted_items[j + 1].get(key))
-            if (left is None and right is not None) or (
-                left is not None and right is not None and left > right
-            ):
-                sorted_items[j], sorted_items[j + 1] = sorted_items[j + 1], sorted_items[j]
-                swapped = True
-        if not swapped:
-            break
+    for i in range(n):
+        for j in range(0, n - i - 1):
+            value1 = sorted_list[j].get(key)
+            value2 = sorted_list[j + 1].get(key)
+            if value1 is None:
+                should_swap = value2 is not None
+            elif value2 is None:
+                should_swap = False
+            else:
+                if isinstance(value1, str) and isinstance(value2, str):
+                    value1 = value1.lower()
+                    value2 = value2.lower()
+                should_swap = value1 > value2
+            if should_swap:
+                sorted_list[j], sorted_list[j + 1] = sorted_list[j + 1], sorted_list[j]
 
-    return sorted_items
+    return sorted_list
 
 
 def bubble_sort_by_name(records):
-    """Return a copy of records in case-insensitive name order."""
-    return bubble_sort(records, "name")
+    sorted_list = list(records)
+    n = len(sorted_list)
 
+    for i in range(n):
+        for j in range(0, n - i - 1):
+            name1 = sorted_list[j]["name"].lower()
+            name2 = sorted_list[j + 1]["name"].lower()
+            if name1 > name2:
+                sorted_list[j], sorted_list[j + 1] = sorted_list[j + 1], sorted_list[j]
+
+    return sorted_list
 
 def bubble_sort_courses_by_capacity(courses_list):
-    """Return a copy of (course_code, course_info) pairs by capacity."""
-    sorted_courses = list(courses_list)
-    count = len(sorted_courses)
+    sorted_list = list(courses_list)
+    n = len(sorted_list)
 
-    for i in range(count):
-        swapped = False
-        for j in range(count - i - 1):
-            if sorted_courses[j][1]["capacity"] > sorted_courses[j + 1][1]["capacity"]:
-                sorted_courses[j], sorted_courses[j + 1] = sorted_courses[j + 1], sorted_courses[j]
-                swapped = True
-        if not swapped:
-            break
+    for i in range(n):
+        for j in range(0, n - i - 1):
+            cap1 = sorted_list[j][1]["capacity"]
+            cap2 = sorted_list[j + 1][1]["capacity"]
+            if cap1 > cap2:
+                sorted_list[j], sorted_list[j + 1] = sorted_list[j + 1], sorted_list[j]
 
-    return sorted_courses
+    return sorted_list

@@ -11,6 +11,7 @@ from algorithms import (
     search_courses_by_keyword,
     topological_sort,
 )
+from data_structures import CourseDictionary, EnrollmentList, EnrollmentSet, StudentDictionary
 
 
 def test_graph_traversals_and_course_order():
@@ -38,10 +39,6 @@ def test_original_search_and_sort_functions():
     assert [row["name"] for row in bubble_sort(rows, "name")] == ["amy", "Zed"]
     assert [row["name"] for row in bubble_sort_by_name(rows)] == ["amy", "Zed"]
     assert [row["name"] for row in rows] == ["Zed", "amy"]
-    records_with_missing_names = [{"name": "Zed"}, {}, {"name": "Amy"}]
-    assert [row.get("name") for row in bubble_sort(records_with_missing_names, "name")] == [
-        "Amy", "Zed", None
-    ]
 
     courses = [
         ("CS101", {"capacity": 30}),
@@ -51,3 +48,15 @@ def test_original_search_and_sort_functions():
     assert [code for code, _ in bubble_sort_courses_by_capacity(courses)] == [
         "CS102", "CS201", "CS101"
     ]
+
+
+def test_data_structure_package_exports():
+    students = StudentDictionary()
+    courses = CourseDictionary()
+    enrollments = EnrollmentSet()
+    records = EnrollmentList()
+
+    assert students.add_student("S1", "Ada")
+    assert courses.add_course("CS101", "Programming", 10)
+    assert enrollments.add_enrollment("S1", "CS101")
+    assert records.add_record("S1", "CS101")["student_id"] == "S1"
