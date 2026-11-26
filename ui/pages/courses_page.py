@@ -231,6 +231,10 @@ class CoursesPage:
             "<Double-1>",
             self.open_enrolled_students
         )
+        self.course_tree.bind(
+            "<Delete>",
+            lambda _event: self.delete_selected_course()
+        )
 
         # Add Course button below the table
         add_button = tk.Button(
@@ -253,14 +257,6 @@ class CoursesPage:
             padx=25,
             pady=(0, 20)
         )
-
-        delete_button = tk.Button(
-            self.frame, text="Delete Selected Course", font=("Arial", 10, "bold"),
-            bg="#DC3545", fg="#FFFFFF", activebackground="#B02A37",
-            activeforeground="#FFFFFF", relief="flat", padx=15, pady=8,
-            cursor="hand2", command=self.delete_selected_course
-        )
-        delete_button.pack(anchor="e", padx=25, pady=(0, 15))
 
     def clear_search_placeholder(self, _event=None):
         if self.search_entry.get() == "Search by course code":

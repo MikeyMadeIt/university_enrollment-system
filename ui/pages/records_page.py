@@ -171,6 +171,10 @@ class RecordsPage:
             fill="x",
             expand=True
         )
+        self.enrollment_table.bind(
+            "<Delete>",
+            lambda _event: self.drop_selected()
+        )
 
         scrollbar.pack(
             side="right",
@@ -178,13 +182,6 @@ class RecordsPage:
         )
 
         self._populate_records()
-
-        tk.Button(
-            table_frame, text="Drop Selected Enrollment", command=self.drop_selected,
-            font=("Arial", 10, "bold"), bg="#DC3545", fg="#FFFFFF",
-            activebackground="#B02A37", activeforeground="#FFFFFF", relief="flat",
-            padx=15, pady=8, cursor="hand2"
-        ).pack(anchor="e", padx=15, pady=(0, 15))
 
     def _populate_records(self):
         self.enrollment_table.delete(*self.enrollment_table.get_children())
