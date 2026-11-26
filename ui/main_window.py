@@ -39,7 +39,7 @@ class MainWindow:
         args = {
             "Dashboard": (Dashboard, (self.student_service, self.course_service, self.enrollment_service)),
             "Students": (StudentsPage, (self.student_service, self.enrollment_service)),
-            "Courses": (CoursesPage, (self.course_service, self.enrollment_service)),
+            "Courses": (CoursesPage, (self.course_service, self.enrollment_service, self.student_service)),
             "Enrollments": (EnrollmentsPage, (self.student_service, self.course_service, self.enrollment_service)),
             "Prerequisites": (PrerequisitesPage, (self.course_service, self.enrollment_service)),
             "Reports": (ReportsPage, (self.report_service,)),
