@@ -2,9 +2,7 @@
 import tkinter as tk
 from tkinter import messagebox, ttk
 
-from ui.components.dialogs import (
-    confirm, course_form, show_enrolled_students, show_error,
-)
+from ui.components.dialogs import AddCourseDialog, EnrolledStudentsDialog
 
 
 class CoursesPage:
@@ -275,7 +273,7 @@ class CoursesPage:
             self.search_entry.config(fg="#888888")
 
     def open_add_course_dialog(self):
-        course_form(self.frame, self.courses, self._add_course)
+        AddCourseDialog(self.frame, self.courses, self._add_course)
 
     def _add_course(self, code, title, capacity, prerequisites):
         self.course_service.add(code, title, capacity, prerequisites)
@@ -315,7 +313,7 @@ class CoursesPage:
             if self.on_change:
                 self.on_change()
         except (ValueError, OSError) as exc:
-            show_error(self.frame, "Delete Failed", exc)
+            messagebox.showerror("Delete Failed", str(exc), parent=self.frame.winfo_toplevel())
 
     def display_courses(self, courses):
         for item in self.course_tree.get_children():
@@ -341,9 +339,18 @@ class CoursesPage:
         course_code = self.course_tree.item(selected_item[0], "values")[0]
         course_details = self.course_service.get(course_code)
         records = self.enrollment_service.for_course(course_code)
-        students = [self.student_service.get(row["student_id"]) for row in records]
-        show_enrolled_students(self.frame, course_code, course_details["title"],
-                               [row for row in students if row])
+        enrolled_ids = [row["student_id"] for row in records]
+        EnrolledStudentsDialog(
+            self.frame, course_code, course_details["title"], enrolled_ids,
+            self.students, course_details.get("prerequisites", []), self.courses,
+            self._drop_enrolled_student
+        )
+
+    def _drop_enrolled_student(self, student_id, course_code):
+        self.enrollment_service.drop(student_id, course_code)
+        self.refresh_courses()
+        if self.on_change:
+            self.on_change()
 
     def load_courses(self):
         self.courses = {}

@@ -80,7 +80,8 @@ class MainWindow:
 
         elif page_name == "Students":
             StudentsPage(self.page_container, self.student_service,
-                         self.enrollment_service, on_change=self.refresh_current_page)
+                         self.enrollment_service, self.course_service,
+                         on_change=self.refresh_current_page)
 
         elif page_name == "Courses":
             CoursesPage(self.page_container, self.course_service,

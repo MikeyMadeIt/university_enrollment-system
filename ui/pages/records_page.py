@@ -207,7 +207,7 @@ class RecordsPage:
                 values=(
                     student_text,
                     course_text,
-                    record["timestamp"]
+                    record.get("timestamp") or ""
                 )
             )
 

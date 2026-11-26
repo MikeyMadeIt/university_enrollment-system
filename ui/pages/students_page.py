@@ -2,15 +2,17 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
 
-from ui.components.dialogs import show_error, student_details, student_form
+from ui.components.dialogs import StudentRegistrationDialog, ViewStudentDialog
 
 
 class StudentsPage:
 
-    def __init__(self, parent, student_service, enrollment_service, on_change=None):
+    def __init__(self, parent, student_service, enrollment_service,
+                 course_service, on_change=None):
         self.parent = parent
         self.student_service = student_service
         self.enrollment_service = enrollment_service
+        self.course_service = course_service
         self.on_change = on_change
 
         self.frame = tk.Frame(
@@ -346,7 +348,7 @@ class StudentsPage:
         )
 
         self.display_students({
-            student_id: student
+            student_id.upper(): student
         })
 
     def delete_student(self):
@@ -386,7 +388,7 @@ class StudentsPage:
             self.enrollment_service.drop_all_for_student(student_id)
             self.student_service.remove(student_id)
         except (ValueError, OSError) as exc:
-            show_error(self.frame, "Delete Failed", exc)
+            messagebox.showerror("Delete Failed", str(exc), parent=self.frame.winfo_toplevel())
             return
         self.load_students()
 
@@ -410,7 +412,7 @@ class StudentsPage:
 
     def open_registration_dialog(self):
 
-        student_form(self.frame, self._register_student)
+        StudentRegistrationDialog(self.frame, self._register_student)
 
     def _register_student(self, student_id, name):
         self.student_service.add(student_id, name)
@@ -439,8 +441,11 @@ class StudentsPage:
         if student is None:
             return
 
-        student_details(self.frame, {**student, "student_id": student_id},
-                        self._add_completed_course)
+        ViewStudentDialog(
+            self.frame.winfo_toplevel(), student_id, student["name"],
+            student["completed_courses"], self._add_completed_course,
+            self.course_service.all()
+        )
 
     def _add_completed_course(self, student_id, course_code):
         self.student_service.add_completed_course(student_id, course_code)
