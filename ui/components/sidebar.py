@@ -8,7 +8,8 @@ class Sidebar(tk.Frame):
         "Students",
         "Courses",
         "Enrollments",
-        "Records"
+        "Prerequisites",
+        "Reports"
     ]
 
     def __init__(self, parent, on_navigate):

@@ -1,466 +1,94 @@
-
 import tkinter as tk
-from tkinter import ttk, messagebox
+from tkinter import messagebox, ttk
 
-from ui.components.dialogs.student_dialogs import (
-    StudentRegistrationDialog,
-    ViewStudentDialog
-)
+from algorithms.sorting import bubble_sort
+from ui.components.dialogs import confirm, show_error
 
 
 class StudentsPage:
-
-    def __init__(self, parent, student_service=None):
-        self.parent = parent
-        self.student_service = student_service
-
-        self.frame = tk.Frame(
-            self.parent,
-            bg="#F1F3F5"
-        )
-
+    def __init__(self, parent, student_service, enrollment_service, on_change=None):
+        self.students, self.enrollments, self.on_change = student_service, enrollment_service, on_change
+        self.frame = ttk.Frame(parent, padding=18)
         self.frame.pack(fill="both", expand=True)
+        ttk.Label(self.frame, text="Students", font=("Arial", 21, "bold")).pack(anchor="w")
+        form = ttk.LabelFrame(self.frame, text="Register student", padding=10)
+        form.pack(fill="x", pady=12)
+        self.student_id, self.name = tk.StringVar(), tk.StringVar()
+        self.email, self.completed = tk.StringVar(), tk.StringVar()
+        fields = (("Student ID", self.student_id, 15), ("Name", self.name, 23),
+                  ("Email", self.email, 25), ("Completed courses (comma separated)", self.completed, 32))
+        for col, (label, var, width) in enumerate(fields):
+            ttk.Label(form, text=label).grid(row=0, column=col, sticky="w", padx=4)
+            ttk.Entry(form, textvariable=var, width=width).grid(row=1, column=col, padx=4, pady=4)
+        ttk.Button(form, text="Add student", command=self.add_student).grid(row=1, column=4, padx=5)
 
-        self.create_header()
-        self.create_search_bar()
-        self.load_students()
-        self.create_student_table()
-        self.create_bottom_button()
+        controls = ttk.Frame(self.frame)
+        controls.pack(fill="x", pady=(0, 8))
+        self.query = tk.StringVar()
+        ttk.Entry(controls, textvariable=self.query).pack(side="left", fill="x", expand=True)
+        ttk.Button(controls, text="Search ID/name", command=self.search).pack(side="left", padx=5)
+        ttk.Button(controls, text="Sort by name", command=self.sort_by_name).pack(side="left")
+        ttk.Button(controls, text="Mark completed course", command=self.mark_completed).pack(side="left", padx=5)
+        ttk.Button(controls, text="Delete selected", command=self.delete).pack(side="right")
+        cols = ("student_id", "name", "email", "completed_courses")
+        self.tree = ttk.Treeview(self.frame, columns=cols, show="headings")
+        for col, width in zip(cols, (130, 220, 220, 300)):
+            self.tree.heading(col, text=col.replace("_", " ").title())
+            self.tree.column(col, width=width, anchor="w")
+        self.tree.pack(fill="both", expand=True)
+        self.refresh()
 
-    def create_header(self):
+    def add_student(self):
+        try:
+            self.students.add(self.student_id.get(), self.name.get(), self.email.get(), self.completed.get().split(","))
+            for field in (self.student_id, self.name, self.email, self.completed): field.set("")
+            self.refresh()
+            if self.on_change: self.on_change()
+        except (ValueError, OSError) as exc:
+            show_error(self.frame, "Student", exc)
 
-        title = tk.Label(
-            self.frame,
-            text="Students",
-            font=("Arial", 22, "bold"),
-            bg="#F1F3F5",
-            fg="#07549C"
-        )
+    def search(self):
+        result = self.students.search(self.query.get())
+        self._show([result] if result else [])
 
-        title.pack(
-            anchor="w",
-            padx=25,
-            pady=(25, 5)
-        )
+    def sort_by_name(self):
+        self._show(bubble_sort(self.students.all(), "name"))
 
-        subtitle = tk.Label(
-            self.frame,
-            text="Manage student records and information",
-            font=("Arial", 10),
-            bg="#F1F3F5",
-            fg="#555555"
-        )
-
-        subtitle.pack(
-            anchor="w",
-            padx=25
-        )
-
-    def create_search_bar(self):
-
-        search_frame = tk.Frame(
-            self.frame,
-            bg="#F1F3F5"
-        )
-
-        search_frame.pack(
-            fill="x",
-            padx=25,
-            pady=20
-        )
-
-        self.search_entry = tk.Entry(
-            search_frame,
-            font=("Arial", 11),
-            relief="solid",
-            bd=1
-        )
-
-        self.search_entry.pack(
-            side="left",
-            fill="x",
-            expand=True,
-            ipady=8,
-            padx=(0, 10)
-        )
-
-        self.search_entry.insert(
-            0,
-            "Search by student ID"
-        )
-
-        self.search_entry.config(fg="#888888")
-
-        self.search_entry.bind(
-            "<FocusIn>",
-            self.clear_placeholder
-        )
-
-        self.search_entry.bind(
-            "<FocusOut>",
-            self.restore_placeholder
-        )
-
-        self.search_entry.bind(
-            "<Return>",
-            lambda event: self.search_student()
-        )
-
-        search_button = tk.Button(
-            search_frame,
-            text="Search",
-            font=("Arial", 10, "bold"),
-            bg="#07549C",
-            fg="#FFFFFF",
-            activebackground="#06447D",
-            activeforeground="#FFFFFF",
-            relief="flat",
-            padx=18,
-            pady=8,
-            cursor="hand2",
-            command=self.search_student
-        )
-
-        search_button.pack(side="right")
-
-        self.search_result = tk.Label(
-            self.frame,
-            text="",
-            font=("Arial", 9),
-            bg="#F1F3F5",
-            fg="#DC3545"
-        )
-
-        self.search_result.pack(
-            anchor="w",
-            padx=25,
-            pady=(0, 5)
-        )
-
-    def clear_placeholder(self, event=None):
-
-        if self.search_entry.get() == "Search by student ID":
-            self.search_entry.delete(0, tk.END)
-            self.search_entry.config(fg="#333333")
-
-    def restore_placeholder(self, event=None):
-
-        if not self.search_entry.get().strip():
-            self.search_entry.insert(
-                0,
-                "Search by student ID"
-            )
-
-            self.search_entry.config(fg="#888888")
-
-    def create_student_table(self):
-
-        table_frame = tk.Frame(
-            self.frame,
-            bg="#FFFFFF"
-        )
-
-        table_frame.pack(
-            fill="both",
-            expand=True,
-            padx=25,
-            pady=(0, 10)
-        )
-
-        table_title = tk.Label(
-            table_frame,
-            text="Student Records",
-            font=("Arial", 14, "bold"),
-            bg="#FFFFFF",
-            fg="#07549C"
-        )
-
-        table_title.pack(
-            anchor="w",
-            padx=15,
-            pady=12
-        )
-
-        columns = (
-            "student_id",
-            "name"
-        )
-
-        self.student_tree = ttk.Treeview(
-            table_frame,
-            columns=columns,
-            show="headings",
-            height=12
-        )
-
-        self.student_tree.heading(
-            "student_id",
-            text="Student ID"
-        )
-
-        self.student_tree.heading(
-            "name",
-            text="Student Name"
-        )
-
-        self.student_tree.column(
-            "student_id",
-            width=150,
-            anchor="center"
-        )
-
-        self.student_tree.column(
-            "name",
-            width=250,
-            anchor="center"
-        )
-
-        scrollbar = ttk.Scrollbar(
-            table_frame,
-            orient="vertical",
-            command=self.student_tree.yview
-        )
-
-        self.student_tree.configure(
-            yscrollcommand=scrollbar.set
-        )
-
-        self.student_tree.pack(
-            side="left",
-            fill="both",
-            expand=True,
-            padx=(15, 0),
-            pady=(0, 15)
-        )
-
-        scrollbar.pack(
-            side="right",
-            fill="y",
-            padx=(0, 15),
-            pady=(0, 15)
-        )
-
-        self.student_tree.bind(
-            "<Double-1>",
-            self.open_view_dialog
-        )
-
-        self.display_students(self.students)
-
-    def create_bottom_button(self):
-
-        button_frame = tk.Frame(
-            self.frame,
-            bg="#F1F3F5"
-        )
-
-        button_frame.pack(
-            fill="x",
-            padx=25,
-            pady=(0, 20)
-        )
-
-        # Add Student button
-        add_button = tk.Button(
-            button_frame,
-            text="+ Add Student",
-            font=("Arial", 10, "bold"),
-            bg="#07549C",
-            fg="#FFFFFF",
-            activebackground="#06447D",
-            activeforeground="#FFFFFF",
-            relief="flat",
-            padx=18,
-            pady=8,
-            cursor="hand2",
-            command=self.open_registration_dialog
-        )
-
-        add_button.pack(side="right")
-
-        # Delete Student button
-        delete_button = tk.Button(
-            button_frame,
-            text="Delete Student",
-            font=("Arial", 10, "bold"),
-            bg="#DC3545",
-            fg="#FFFFFF",
-            activebackground="#B02A37",
-            activeforeground="#FFFFFF",
-            relief="flat",
-            padx=18,
-            pady=8,
-            cursor="hand2",
-            command=self.delete_student
-        )
-
-        delete_button.pack(
-            side="right",
-            padx=(0, 10)
-        )
-
-    def display_students(self, students):
-
-        for item in self.student_tree.get_children():
-            self.student_tree.delete(item)
-
-        for student_id, details in students.items():
-
-            self.student_tree.insert(
-                "",
-                "end",
-                values=(
-                    student_id,
-                    details["name"]
-                )
-            )
-
-    def search_student(self):
-
-        student_id = self.search_entry.get().strip()
-
-        if student_id == "Search by student ID" or not student_id:
-
-            self.search_result.config(
-                text="Please enter a Student ID.",
-                fg="#DC3545"
-            )
-
-            self.display_students(self.students)
+    def mark_completed(self):
+        selected = self.tree.selection()
+        if not selected:
+            messagebox.showinfo("Student", "Select a student first.", parent=self.frame)
             return
-
-        student = self.students.get(student_id)
-
-        if student is None:
-
-            self.search_result.config(
-                text="Student not found.",
-                fg="#DC3545"
-            )
-
-            self.display_students({})
+        course = self.query.get().strip()
+        if not course:
+            messagebox.showinfo("Student", "Enter the completed course code in the search field.", parent=self.frame)
             return
+        sid = self.tree.item(selected[0], "values")[0]
+        try:
+            self.students.add_completed_course(sid, course)
+            self.refresh()
+            if self.on_change: self.on_change()
+        except (ValueError, OSError) as exc:
+            show_error(self.frame, "Student", exc)
 
-        self.search_result.config(
-            text="Student found successfully.",
-            fg="#16803C"
-        )
-
-        self.display_students({
-            student_id: student
-        })
-
-    def delete_student(self):
-
-        selected_item = self.student_tree.selection()
-
-        if not selected_item:
-
-            messagebox.showwarning(
-                "No Student Selected",
-                "Please select a student to delete.",
-                parent=self.frame.winfo_toplevel()
-            )
-
+    def delete(self):
+        selected = self.tree.selection()
+        if not selected: return
+        sid = self.tree.item(selected[0], "values")[0]
+        if not confirm(self.frame, "Delete student", f"Delete {sid} and all active enrollments?"):
             return
+        try:
+            self.enrollments.drop_all_for_student(sid)
+            self.students.remove(sid)
+            self.refresh()
+            if self.on_change: self.on_change()
+        except (ValueError, OSError) as exc:
+            show_error(self.frame, "Student", exc)
 
-        values = self.student_tree.item(
-            selected_item[0],
-            "values"
-        )
+    def refresh(self):
+        self._show(self.students.all())
 
-        student_id = values[0]
-        student_name = values[1]
-
-        confirm = messagebox.askyesno(
-            "Confirm Deletion",
-            f"Are you sure you want to delete this student?\n\n"
-            f"Student ID: {student_id}\n"
-            f"Name: {student_name}",
-            parent=self.frame.winfo_toplevel()
-        )
-
-        if not confirm:
-            return
-
-        if self.student_service is not None:
-            try:
-                self.student_service.remove(student_id)
-                self.load_students()
-            except Exception as e:
-                messagebox.showerror(
-                    "Delete Failed", str(e),
-                    parent=self.frame.winfo_toplevel()
-                )
-                return
-        else:
-            
-            self.students.pop(student_id, None)
-
-        #4 UI testing only, remove from placeholder data
-        self.students.pop(student_id, None)
-
-        #eset search field
-        self.search_entry.delete(0, tk.END)
-        self.search_entry.insert(
-            0,
-            "Search by student ID"
-        )
-        self.search_entry.config(fg="#888888")
-
-        # refresh table
-        self.display_students(self.students)
-
-        self.search_result.config(
-            text="Student deleted successfully.",
-            fg="#16803C"
-        )
-
-    def open_registration_dialog(self):
-
-        StudentRegistrationDialog(
-            self.frame.winfo_toplevel()
-        )
-
-    def open_view_dialog(self, event=None):
-
-        selected_item = self.student_tree.selection()
-
-        if not selected_item:
-            return
-
-        values = self.student_tree.item(
-            selected_item[0],
-            "values"
-        )
-
-        student_id = values[0]
-
-        student = self.students.get(student_id)
-
-        if student is None:
-            return
-
-        ViewStudentDialog(
-            self.frame.winfo_toplevel(),
-            student_id,
-            student["name"],
-            student["completed_courses"]
-        )
-
-    #tempo data 4 UI testing
-    def load_students(self):
-        """Load students from the service, or fall back to placeholder data."""
-        if self.student_service is None:
-            self.load_placeholder_students()
-            return
-
-        self.students = {}
-        for s in self.student_service.all():
-            self.students[s["student_id"]] = {
-                "name": s["name"],
-                "completed_courses": set(s.get("completed_courses", [])),
-            }
-
-    #tempo data 4 UI testing
-    def load_placeholder_students(self):
+    def _show(self, rows):
+        self.tree.delete(*self.tree.get_children())
+        for row in rows:
+            self.tree.insert("", "end", values=(row["student_id"], row["name"], row.get("email", ""), ", ".join(row.get("completed_courses", []))))
