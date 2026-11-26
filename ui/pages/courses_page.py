@@ -2,7 +2,10 @@
 import tkinter as tk
 from tkinter import messagebox, ttk
 
-from ui.components.dialogs import AddCourseDialog, EnrolledStudentsDialog
+from ui.components.dialogs.course_dialogs import (
+    AddCourseDialog,
+    EnrolledStudentsDialog,
+)
 
 
 class CoursesPage:

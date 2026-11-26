@@ -459,7 +459,7 @@ class RecordsPage:
 
             tk.Label(
                 course_frame,
-                text=f"Enrolled: {record.get('timestamp') or 'Date unavailable'}",
+                text="Schedule: TBA",
                 font=("Arial", 9),
                 bg="#F1F3F5",
                 fg="#555555"
