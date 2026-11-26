@@ -1,5 +1,5 @@
 from algorithms.searching import linear_search_by_name, linear_search_by_id, search_courses_by_keyword
-from algorithms.sorting import bubble_sort_by_name, bubble_sort_courses_by_capacity
+from algorithms.sorting import bubble_sort, bubble_sort_by_name, bubble_sort_courses_by_capacity
 from algorithms.prerequisite_graph import build_prerequisite_graph
 from algorithms.dfs import dfs
 from algorithms.bfs import bfs, bfs_levels
