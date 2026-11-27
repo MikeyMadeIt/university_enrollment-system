@@ -68,6 +68,8 @@ class MainWindow:
 
     def show_page(self, page_name):
 
+        self.sidebar.set_active(page_name)
+
         # Clear previous page
         for widget in self.page_container.winfo_children():
             widget.destroy()

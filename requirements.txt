@@ -1,2 +1,3 @@
 # Tkinter is part of the Python standard library on Arch Linux
 # (install the 'tk' package if it is missing)
+pytest>=7.0

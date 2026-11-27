@@ -47,6 +47,20 @@ class StudentService:
     def delete_student(self, student_id):
         if not self.dict.student_exist(student_id):
             return False, "Student not found."
+
+        # Remove active course memberships and matching records before deleting
+        # the student, so rosters and enrollment history do not retain a ghost.
+        from services.course_service import CourseService
+        from services.enrollment_service import EnrollmentService
+
+        course_service = CourseService(self.storage)
+        enrollment_service = EnrollmentService(
+            self.storage, student_service=self, course_service=course_service)
+        enrolled_courses = enrollment_service.enroll_set.get_courses_of_student(
+            student_id)
+        for course_code in enrolled_courses:
+            enrollment_service.drop(student_id, course_code)
+
         self.dict.delete_student(student_id)
         self._save()
         return True, "Student deleted."

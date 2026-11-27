@@ -54,9 +54,19 @@ class CourseService:
         return True, "Course added successfully."
 
     def delete_course(self, code):
-        code = code.upper()
-        if not self.dict.course_exists(code):
+        code = code.strip().upper()
+        course = self.dict.get_course(code)
+        if course is None:
             return False, "Course not found."
+        if course["enrolled"]:
+            return False, "Drop all enrolled students before deleting this course."
+        dependents = [
+            other_code for other_code, info in self.dict.get_all_courses().items()
+            if code in info["prerequisites"]
+        ]
+        if dependents:
+            return False, "This course is a prerequisite for: " + ", ".join(
+                sorted(dependents))
         del self.dict.courses[code]
         self._save()
         return True, "Course deleted."

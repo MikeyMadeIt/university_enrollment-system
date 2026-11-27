@@ -102,6 +102,10 @@ class StudentsPage:
             messagebox.showwarning("No Student Selected", "Please select a student.")
             return
         sid = self.tree.item(sel[0], "values")[0]
+        if not messagebox.askyesno(
+                "Delete Student",
+                f"Delete {sid} and remove their active enrollments?"):
+            return
         ok, msg = self.service.delete_student(sid)
         if ok:
             self.refresh()

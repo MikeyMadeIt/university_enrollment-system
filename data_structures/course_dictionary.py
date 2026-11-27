@@ -43,7 +43,9 @@ class CourseDictionary:
         course = self.courses.get(course_code)
         if course is None:
             return False
-        course["enrolled"].discard(student_id)
+        if student_id not in course["enrolled"]:
+            return False
+        course["enrolled"].remove(student_id)
         return True
         
     def meets_prerequisites(self, course_code, completed_courses):

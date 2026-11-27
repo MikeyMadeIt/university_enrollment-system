@@ -55,6 +55,9 @@ class CoursesPage:
         tk.Button(btn, text="+ Add Course", bg="#07549C", fg="white", font=("Arial", 10, "bold"),
                   relief="flat", padx=20, pady=8, command=self.open_add_dialog
                   ).pack(side="right", padx=(10, 0))
+        tk.Button(btn, text="Delete Course", bg="#DC3545", fg="white", font=("Arial", 10, "bold"),
+                  relief="flat", padx=20, pady=8, command=self.delete_course
+                  ).pack(side="right", padx=(10, 0))
         tk.Button(btn, text="View Roster", bg="#6C757D", fg="white", font=("Arial", 10, "bold"),
                   relief="flat", padx=20, pady=8, command=lambda: self.open_roster(None)
                   ).pack(side="right")
@@ -84,6 +87,23 @@ class CoursesPage:
 
     def open_add_dialog(self):
         AddCourseDialog(self.frame, on_success=self.refresh)
+
+    def delete_course(self):
+        sel = self.tree.selection()
+        if not sel:
+            messagebox.showwarning("No Course Selected", "Please select a course.")
+            return
+        code = self.tree.item(sel[0], "values")[0]
+        if not messagebox.askyesno(
+                "Delete Course",
+                f"Delete {code}? Courses with enrollments or dependent courses cannot be deleted."):
+            return
+        ok, msg = self.service.delete_course(code)
+        if ok:
+            self.refresh()
+            self.search_result.config(text=msg, fg="#16803C")
+        else:
+            messagebox.showerror("Cannot Delete Course", msg)
 
     def open_roster(self, event):
         sel = self.tree.selection()

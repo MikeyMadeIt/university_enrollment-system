@@ -7,23 +7,35 @@ from services.enrollment_service import EnrollmentService
 class Dashboard:
     def __init__(self, parent):
         self.parent = parent
+        self._build_page()
+
+    def _build_page(self):
         self.student_service = StudentService()
         self.course_service = CourseService()
         self.enrollment_service = EnrollmentService(
             student_service=self.student_service,
             course_service=self.course_service,
         )
-        self.frame = tk.Frame(parent, bg="#F1F3F5")
+        self.frame = tk.Frame(self.parent, bg="#F1F3F5")
         self.frame.pack(fill="both", expand=True)
         self.create_header()
         self.create_stats()
         self.create_capacity_table()
 
     def create_header(self):
+        top = tk.Frame(self.frame, bg="#F1F3F5")
+        top.pack(fill="x", padx=25, pady=(25, 15))
         tk.Label(
-            self.frame, text="Dashboard", font=("Arial", 22, "bold"),
+            top, text="Dashboard", font=("Arial", 22, "bold"),
             bg="#F1F3F5", fg="#07549C"
-        ).pack(anchor="w", padx=25, pady=(25, 15))
+        ).pack(side="left")
+        tk.Button(top, text="Refresh", command=self.refresh,
+                  bg="#07549C", fg="white", relief="flat",
+                  padx=16, pady=7).pack(side="right")
+
+    def refresh(self):
+        self.frame.destroy()
+        self._build_page()
 
     def create_stats(self):
         stats_frame = tk.Frame(self.frame, bg="#F1F3F5")

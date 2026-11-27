@@ -20,10 +20,15 @@ class RecordsPage:
         self.refresh()
 
     def create_header(self):
+        top = tk.Frame(self.frame, bg="#F1F3F5")
+        top.pack(fill="x", padx=25, pady=(25, 5))
         tk.Label(
-            self.frame, text="Enrollment Records", font=("Arial", 22, "bold"),
+            top, text="Enrollment Records", font=("Arial", 22, "bold"),
             bg="#F1F3F5", fg="#07549C"
-        ).pack(anchor="w", padx=25, pady=(25, 5))
+        ).pack(side="left")
+        tk.Button(top, text="Refresh", command=self.refresh,
+                  bg="#07549C", fg="white", relief="flat",
+                  padx=16, pady=7).pack(side="right")
 
     def create_table(self):
         table_frame = tk.Frame(self.frame, bg="#FFFFFF")

@@ -2,6 +2,7 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 from services.course_service import CourseService
 from services.student_service import StudentService
+from services.enrollment_service import EnrollmentService
 
 class AddCourseDialog:
     def __init__(self, parent, on_success=None):
@@ -109,6 +110,11 @@ class EnrolledStudentsDialog:
     def __init__(self, parent, course_code, on_refresh=None):
         self.course_code = course_code
         self.on_refresh = on_refresh
+        self.course_service = CourseService()
+        self.student_service = StudentService()
+        self.enrollment_service = EnrollmentService(
+            student_service=self.student_service,
+            course_service=self.course_service)
         self.window = tk.Toplevel(parent)
         self.window.title("Enrolled Students")
         self.window.geometry("600x500")
@@ -126,8 +132,8 @@ class EnrolledStudentsDialog:
         for w in self.window.winfo_children():
             w.destroy()
 
-        cs = CourseService()
-        ss = StudentService()
+        cs = self.course_service
+        ss = self.student_service
         course = cs.get_course(self.course_code)
         if not course:
             return
@@ -184,7 +190,7 @@ class EnrolledStudentsDialog:
             messagebox.showwarning("Warning", "Select a student to drop.", parent=self.window)
             return
         sid = self.tree.item(sel[0], "values")[0]
-        ok, msg = CourseService().remove_enrollment(self.course_code, sid)
+        ok, msg = self.enrollment_service.drop(sid, self.course_code)
         if ok:
             if self.on_refresh:
                 self.on_refresh()
