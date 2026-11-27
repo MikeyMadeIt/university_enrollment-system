@@ -1,42 +1,52 @@
-
-"""JSON file persistence for the enrollment system."""
-
 import json
-import os
-
+from pathlib import Path
 
 class JsonStorage:
-    """Simple read/write wrapper around JSON files in a base directory."""
+    """Handles loading and saving JSON files."""
 
-    def __init__(self, base_dir="data"):
-        self.base_dir = base_dir
-        os.makedirs(self.base_dir, exist_ok=True)
+    def __init__(self, data_dir="data"):
+        self.data_dir = Path(data_dir)
+        self.data_dir.mkdir(parents=True, exist_ok=True)
 
     def _path(self, filename):
-        return os.path.join(self.base_dir, filename)
+        return self.data_dir / filename
 
     def load(self, filename, default=None):
-        """Load JSON list/dict. Returns `default` (or []) if missing/corrupt."""
         path = self._path(filename)
-        fallback = [] if default is None else default
-        if not os.path.exists(path):
-            return fallback
+        if not path.exists():
+            return default if default is not None else {}
         try:
             with open(path, "r", encoding="utf-8") as f:
                 data = json.load(f)
         except (json.JSONDecodeError, OSError):
-            return fallback
+            return default if default is not None else {}
 
-        # Callers pass the shape they need as the default (usually a list).
-        # A syntactically valid file with the wrong root type is still invalid
-        # for that caller, so use its fallback instead of crashing in a service.
-        if not isinstance(data, (list, dict)):
-            return fallback
-        if isinstance(fallback, (list, dict)) and not isinstance(data, type(fallback)):
-            return fallback
+        # Callers choose a default with the expected root type (dict or list).
+        # Treat a valid JSON document with the wrong shape like corrupt data.
+        if default is not None and not isinstance(data, type(default)):
+            return default
         return data
 
     def save(self, filename, data):
         path = self._path(filename)
         with open(path, "w", encoding="utf-8") as f:
-            json.dump(data, f, indent=2)
+            json.dump(data, f, indent=2, ensure_ascii=False)
+
+    # Convenience helpers -------------------------------------------------
+    def load_students(self):
+        return self.load("students.json", {})
+
+    def save_students(self, students):
+        self.save("students.json", students)
+
+    def load_courses(self):
+        return self.load("courses.json", {})
+
+    def save_courses(self, courses):
+        self.save("courses.json", courses)
+
+    def load_enrollments(self):
+        return self.load("enrollments.json", [])
+
+    def save_enrollments(self, enrollments):
+        self.save("enrollments.json", enrollments)

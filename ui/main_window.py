@@ -2,6 +2,8 @@
 import tkinter as tk
 
 from .pages.records_page import RecordsPage
+from .pages.roster_page import RosterPage
+from .pages.reports_page import ReportsPage
 from .components.header import Header
 from .components.sidebar import Sidebar
 from .pages.dashboard import Dashboard
@@ -12,19 +14,16 @@ from .pages.enrollments_page import EnrollmentsPage
 
 class MainWindow:
 
-    def __init__(self, root, student_service, course_service, enrollment_service,
-                 report_service=None):
+    def __init__(self, root):
         self.root = root
-        self.student_service = student_service
-        self.course_service = course_service
-        self.enrollment_service = enrollment_service
-        self.report_service = report_service
 
         self.root.title("QCU - Course Registration System")
         self.root.geometry("1280x800")
         self.root.minsize(1000, 650)
 
         self.root.configure(bg="#F1F3F5")
+
+        self._build_menubar()
 
         self.build_layout()
 
@@ -68,28 +67,38 @@ class MainWindow:
         self.show_page("Dashboard")
 
     def show_page(self, page_name):
-        self.current_page = page_name
 
         # Clear previous page
         for widget in self.page_container.winfo_children():
             widget.destroy()
 
         if page_name == "Dashboard":
-            Dashboard(self.page_container, self.student_service, self.course_service,
-                      self.enrollment_service)
+            Dashboard(self.page_container)
 
         elif page_name == "Students":
-            StudentsPage(self.page_container, self.student_service,
-                         self.enrollment_service, self.course_service)
+            StudentsPage(self.page_container)
 
         elif page_name == "Courses":
-            CoursesPage(self.page_container, self.course_service,
-                        self.enrollment_service, self.student_service)
+            CoursesPage(self.page_container)
 
         elif page_name == "Enrollments":
-            EnrollmentsPage(self.page_container, self.student_service,
-                            self.course_service, self.enrollment_service)
+            EnrollmentsPage(self.page_container)
 
         elif page_name == "Records":
-            RecordsPage(self.page_container, self.enrollment_service,
-                        self.student_service, self.course_service)
+            RecordsPage(self.page_container)
+
+        elif page_name == "Roster":
+            RosterPage(self.page_container)
+
+        elif page_name == "Reports":
+            ReportsPage(self.page_container)
+
+    def _build_menubar(self):
+        menubar = tk.Menu(self.root)
+        self.root.config(menu=menubar)
+        nav = tk.Menu(menubar, tearoff=0)
+        menubar.add_cascade(label="Navigate", menu=nav)
+        for page in ["Dashboard", "Students", "Courses", "Enrollments",
+                     "Records", "Roster", "Reports"]:
+            nav.add_command(label=page,
+                            command=lambda p=page: self.show_page(p))

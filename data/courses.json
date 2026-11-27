@@ -1,31 +1,29 @@
-[
-  {
-    "course_code": "CS101",
-    "title": "Intro to Programming",
-    "capacity": 30,
-    "prerequisites": []
-  },
-  {
-    "course_code": "MA101",
-    "title": "Calculus I",
+{
+  "CS101": {
+    "name": "Introduction to Computing",
     "capacity": 40,
+    "enrolled": [
+      "25-0542",
+      "25-0543"
+    ],
     "prerequisites": []
   },
-  {
-    "course_code": "CS102",
-    "title": "Data Structures",
-    "capacity": 25,
+  "CS102": {
+    "name": "Data Structures",
+    "capacity": 30,
+    "enrolled": [
+      "25-0543"
+    ],
     "prerequisites": [
       "CS101"
     ]
   },
-  {
-    "course_code": "CS201",
-    "title": "Algorithms",
-    "capacity": 20,
-    "prerequisites": [
-      "CS102",
-      "MA101"
-    ]
+  "IT101": {
+    "name": "Introduction to Information Technology",
+    "capacity": 40,
+    "enrolled": [
+      "25-0543"
+    ],
+    "prerequisites": []
   }
-]
+}

@@ -1,8 +1,23 @@
-[
-  {
-    "student_id": "S001",
-    "name": "Alice",
-    "email": "alice@university.edu",
-    "enrolled_courses": ["CS101", "MA101"]
+{
+  "2026-001": {
+    "name": "Lopez, Dhan Paul",
+    "completed_courses": []
+  },
+  "2026-002": {
+    "name": "Santos, Maria",
+    "completed_courses": []
+  },
+  "25-0542": {
+    "name": "Carillo, Felix L.",
+    "completed_courses": [
+      "CS101",
+      "IT101"
+    ]
+  },
+  "25-0543": {
+    "name": "Ricamata, Michael",
+    "completed_courses": [
+      "CS101"
+    ]
   }
-]
+}

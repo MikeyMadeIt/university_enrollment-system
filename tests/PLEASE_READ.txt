@@ -1,0 +1,46 @@
+=== DATA STRUCTURES (for services/) ===
+
+StudentDictionary()
+  .add_student(student_id, name)              -> True/False
+  .get_student(student_id)                    -> dict or None
+  .student_exists(student_id)                 -> True/False
+  .add_completed_course(student_id, code)     -> True/False
+  .has_completed(student_id, code)            -> True/False
+  .remove_student(student_id)                 -> True/False
+  .get_all_students()                         -> dict
+
+CourseDictionary()
+  .add_course(code, name, capacity, prereqs)  -> True/False
+  .get_course(code)                           -> dict or None
+  .course_exists(code)                        -> True/False
+  .has_slot(code)                             -> True/False
+  .enroll_student(code, student_id)           -> True/False
+  .drop_student(code, student_id)             -> True/False
+  .meets_prerequisites(code, completed_set)   -> True/False
+  .get_all_courses()                          -> dict
+
+EnrollmentSet()
+  .add_enrollment(student_id, code)           -> True/False
+  .is_duplicate(student_id, code)             -> True/False
+  .remove_enrollment(student_id, code)        -> True/False
+  .get_courses_of_student(student_id)         -> set
+  .get_students_of_course(code)               -> set
+
+EnrollmentList()
+  .add_record(student_id, code, timestamp)    -> dict
+  .get_all_records()                          -> list
+  .filter_by_student(student_id)              -> list
+  .filter_by_course(code)                     -> list
+
+=== ALGORITHMS (for services/ and ui/) ===
+
+linear_search_by_name(records_list, name)     -> dict or None
+linear_search_by_id(records_dict, id)         -> dict or None
+search_courses_by_keyword(courses_dict, kw)   -> list of (code, info)
+bubble_sort_by_name(records_list)             -> sorted list
+bubble_sort_courses_by_capacity(courses_list) -> sorted list
+build_prerequisite_graph(courses_dict)        -> graph dict
+dfs(graph, start_course)                      -> list
+bfs(graph, start_course)                      -> list
+bfs_levels(graph, start_course)               -> dict {course: level}
+topological_sort(graph)                       -> list

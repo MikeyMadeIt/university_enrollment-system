@@ -1,14 +1,37 @@
 [
   {
-    "student_id": "S001",
-    "course_code": "CS102"
+    "student_id": "25-0542",
+    "student_name": "Carillo, Felix L.",
+    "course_code": "CS101",
+    "course_name": "Introduction to Computing",
+    "timestamp": "2026-11-22 11:53:41"
   },
   {
-    "student_id": "S002",
-    "course_code": "CS101"
+    "student_id": "25-0542",
+    "student_name": "Carillo, Felix L.",
+    "course_code": "CS102",
+    "course_name": "Data Structures",
+    "timestamp": "2026-11-22 12:58:16"
   },
   {
-    "student_id": "S003",
-    "course_code": "MA101"
+    "student_id": "25-0543",
+    "student_name": "Ricamata, Michael",
+    "course_code": "CS101",
+    "course_name": "Introduction to Computing",
+    "timestamp": "2026-11-22 13:07:53"
+  },
+  {
+    "student_id": "25-0543",
+    "student_name": "Ricamata, Michael",
+    "course_code": "IT101",
+    "course_name": "Introduction to Information Technology",
+    "timestamp": "2026-11-22 13:07:59"
+  },
+  {
+    "student_id": "25-0543",
+    "student_name": "Ricamata, Michael",
+    "course_code": "CS102",
+    "course_name": "Data Structures",
+    "timestamp": "2026-11-22 13:08:22"
   }
 ]

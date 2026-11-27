@@ -1,104 +1,119 @@
-"""Course operations backed by CourseDictionary and prerequisite algorithms."""
-
-from algorithms.prerequisite_graph import build_prerequisite_graph
-from algorithms.searching import search_courses_by_keyword
-from algorithms.topological_sort import topological_sort
+from storage.json_storage import JsonStorage
+from utils.validation import validate_course_code, validate_name, validate_capacity
 from data_structures.course_dictionary import CourseDictionary
+from algorithms.searching import search_courses_by_keyword
+from algorithms.sorting import bubble_sort_courses_by_capacity
+from algorithms.prerequisite_graph import build_prerequisite_graph
+from algorithms.dfs import dfs
+from algorithms.bfs import bfs, bfs_levels
+from algorithms.topological_sort import topological_sort
 
 
 class CourseService:
-    def __init__(self, storage):
-        self.storage = storage
-        self.courses = CourseDictionary()
-        for row in storage.load("courses.json", []):
-            if not isinstance(row, dict):
-                continue
-            code = row.get("course_code", row.get("code"))
-            title = row.get("title", row.get("name", ""))
-            if not code or not isinstance(title, str) or not title.strip():
-                continue
-            try:
-                capacity = int(row.get("capacity", 0))
-            except (TypeError, ValueError):
-                continue
-            if capacity <= 0:
-                continue
-            prerequisites = row.get("prerequisites", [])
-            if not isinstance(prerequisites, (list, tuple, set)):
-                prerequisites = []
-            prerequisites = [str(value).strip().upper() for value in prerequisites
-                             if str(value).strip()]
-            self.courses.add_course(str(code).strip().upper(), title.strip(), capacity,
-                                    prerequisites)
+    def __init__(self, storage=None):
+        self.storage = storage or JsonStorage()
+        self.dict = CourseDictionary()
+        self._load()
 
-    def add(self, code, title, capacity, prerequisites=None):
-        code, title = (code or "").strip().upper(), (title or "").strip()
-        if not code or not title:
-            raise ValueError("Course code and title are required")
-        try:
-            capacity = int(capacity)
-        except (TypeError, ValueError) as exc:
-            raise ValueError("Capacity must be an integer") from exc
-        if capacity <= 0:
-            raise ValueError("Capacity must be positive")
-        prereqs = list(dict.fromkeys(str(p).strip().upper() for p in (prerequisites or []) if str(p).strip()))
-        if code in prereqs:
-            raise ValueError("A course cannot be its own prerequisite")
-        for prereq in prereqs:
-            if not self.courses.course_exists(prereq):
-                raise ValueError(f"Prerequisite course {prereq} does not exist")
-        if not self.courses.add_course(code, title, capacity, prereqs):
-            raise ValueError(f"Course {code} already exists or capacity is invalid")
-        self._persist()
-        return self.get(code)
+    def _load(self):
+        raw = self.storage.load_courses()
+        for code, info in raw.items():
+            self.dict.add_course(code, info["name"], info["capacity"],
+                                 info.get("prerequisites", []))
+            for sid in info.get("enrolled", []):
+                self.dict.enroll_student(code, sid)
 
-    def remove(self, code):
-        code = (code or "").strip().upper()
-        if not self.courses.course_exists(code):
-            raise ValueError(f"Course {code} not found")
-        for dependent, course in self.courses.get_all_courses().items():
-            if dependent != code and code in course["prerequisites"]:
-                raise ValueError(f"Course {code} is a prerequisite for {dependent}")
-        if self.courses.get_course(code)["enrolled"]:
-            raise ValueError(f"Course {code} still has enrolled students")
-        # The original CourseDictionary has no delete method; removal from its
-        # authoritative mapping is the only available operation.
-        del self.courses.courses[code]
-        self._persist()
+    def _save(self):
+        raw = {}
+        for code, info in self.dict.get_all_courses().items():
+            raw[code] = {
+                "name": info["name"],
+                "capacity": info["capacity"],
+                "enrolled": sorted(info["enrolled"]),
+                "prerequisites": sorted(info["prerequisites"]),
+            }
+        self.storage.save_courses(raw)
 
-    def has_dependents(self, code):
-        code = (code or "").strip().upper()
-        return any(dependent != code and code in course["prerequisites"]
-                   for dependent, course in self.courses.get_all_courses().items())
+    def reload(self):
+        self.dict = CourseDictionary()
+        self._load()
 
-    def get(self, code):
-        code = (code or "").strip().upper()
-        row = self.courses.get_course(code)
-        if row is None:
-            return None
-        return {"course_code": code, "title": row["name"], "name": row["name"],
-                "capacity": row["capacity"], "prerequisites": list(row["prerequisites"]),
-                "enrolled": list(row["enrolled"])}
+    def add_course(self, code, name, capacity, prerequisites=None):
+        code = code.strip().upper()
+        name = name.strip()
+        if not validate_course_code(code):
+            return False, "Invalid course code."
+        if not validate_name(name):
+            return False, "Invalid course name."
+        if not validate_capacity(capacity):
+            return False, "Capacity must be a positive integer."
+        prereqs = [p.strip().upper() for p in (prerequisites or [])]
+        if not self.dict.add_course(code, name, int(capacity), prereqs):
+            return False, "Course code already exists."
+        self._save()
+        return True, "Course added successfully."
 
-    def all(self):
-        return [self.get(code) for code in self.courses.get_all_courses()]
+    def delete_course(self, code):
+        code = code.upper()
+        if not self.dict.course_exists(code):
+            return False, "Course not found."
+        del self.dict.courses[code]
+        self._save()
+        return True, "Course deleted."
 
-    def search(self, keyword):
-        keyword = (keyword or "").strip()
-        if not keyword:
+    def get_all_courses(self):
+        return self.dict.get_all_courses()
+
+    def get_course(self, code):
+        return self.dict.get_course(code.upper())
+
+    # ---- searching (self-implemented) -------------------------
+    def search_by_code(self, code):
+        return self.dict.get_course(code.upper())
+
+    def search_by_keyword(self, keyword):
+        return search_courses_by_keyword(self.dict.get_all_courses(), keyword)
+
+    # ---- sorting (self-implemented) ---------------------------
+    def sorted_courses(self, by="capacity"):
+        records = list(self.dict.get_all_courses().items())
+        return bubble_sort_courses_by_capacity(records)
+
+    # ---- graph (self-implemented) -----------------------------
+    def _graph(self):
+        return build_prerequisite_graph(self.dict.get_all_courses())
+
+    def topological_order(self):
+        return topological_sort(self._graph())
+
+    def dfs_dependents(self, code):
+        return dfs(self._graph(), code.upper())
+
+    def bfs_levels_from(self, code):
+        return bfs_levels(self._graph(), code.upper())
+
+    # ---- capacity / prereq ------------------------------------
+    def has_slot(self, code):
+        return self.dict.has_slot(code.upper())
+
+    def meets_prerequisites(self, code, completed):
+        return self.dict.meets_prerequisites(code.upper(), set(completed))
+
+    # ---- roster -----------------------------------------------
+    def get_roster(self, code):
+        course = self.dict.get_course(code.upper())
+        if not course:
             return []
-        return [{**course, "course_code": code} for code, course in
-                search_courses_by_keyword(self.courses.get_all_courses(), keyword)]
+        return sorted(course["enrolled"])
 
-    def prerequisite_graph(self):
-        return build_prerequisite_graph(self.courses.get_all_courses())
+    def add_enrollment(self, code, student_id):
+        ok = self.dict.enroll_student(code.upper(), student_id)
+        if ok:
+            self._save()
+        return ok
 
-    def prerequisite_order(self):
-        return topological_sort(self.prerequisite_graph())
-
-    def _persist(self):
-        self.storage.save("courses.json", [
-            {"course_code": c["course_code"], "title": c["title"],
-             "capacity": c["capacity"], "prerequisites": c["prerequisites"]}
-            for c in self.all()
-        ])
+    def remove_enrollment(self, code, student_id):
+        ok = self.dict.drop_student(code.upper(), student_id)
+        if ok:
+            self._save()
+        return ok

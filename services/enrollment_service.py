@@ -1,119 +1,105 @@
-"""Enrollment rules using the original enrollment structures and graph modules."""
-
 from datetime import datetime
-
-from algorithms.bfs import bfs, bfs_levels
-from algorithms.dfs import dfs
-from algorithms.prerequisite_graph import build_prerequisite_graph
-from algorithms.topological_sort import topological_sort
-from data_structures.enrollment_list import EnrollmentList
+from storage.json_storage import JsonStorage
+from services.student_service import StudentService
+from services.course_service import CourseService
 from data_structures.enrollment_set import EnrollmentSet
+from data_structures.enrollment_list import EnrollmentList
 
 
 class EnrollmentService:
-    def __init__(self, storage, student_service, course_service):
-        self.storage = storage
-        self.student_service = student_service
-        self.course_service = course_service
-        self.enrollments = EnrollmentSet()
-        self.records = EnrollmentList()
-        for row in storage.load("enrollments.json", []):
-            if not isinstance(row, dict):
-                continue
-            sid = str(row.get("student_id", "")).strip().upper()
-            code = str(row.get("course_code", "")).strip().upper()
-            if not sid or not code or not self.enrollments.add_enrollment(sid, code):
-                continue
-            self.records.add_record(sid, code, row.get("timestamp"))
-            if self.course_service.courses.course_exists(code):
-                self.course_service.courses.enroll_student(code, sid)
+    def __init__(self, storage=None, student_service=None, course_service=None):
+        self.storage = storage or JsonStorage()
+        self.student_service = student_service or StudentService(self.storage)
+        self.course_service = course_service or CourseService(self.storage)
+        self.enroll_set = EnrollmentSet()
+        self.list = EnrollmentList()
+        self._load()
+
+    def _load(self):
+        # Rebuild EnrollmentSet from courses (source of truth)
+        for code, info in self.course_service.get_all_courses().items():
+            for sid in info.get("enrolled", []):
+                self.enroll_set.add_enrollment(sid, code)
+        # Rebuild transaction log
+        for r in self.storage.load_enrollments():
+            self.list.add_record(r["student_id"], r["course_code"],
+                                 r.get("timestamp"))
+
+    def _enrich(self, records):
+        out = []
+        for r in records:
+            s = self.student_service.get_student(r["student_id"])
+            c = self.course_service.get_course(r["course_code"])
+            out.append({
+                "student_id": r["student_id"],
+                "student_name": s["name"] if s else "(unknown)",
+                "course_code": r["course_code"],
+                "course_name": c["name"] if c else "(unknown)",
+                "timestamp": r.get("timestamp"),
+            })
+        return out
+
+    def _save(self):
+        self.storage.save_enrollments(
+            self._enrich(self.list.get_all_records()))
+
+    def reload(self):
+        self.enroll_set = EnrollmentSet()
+        self.list = EnrollmentList()
+        self._load()
 
     def enroll(self, student_id, course_code):
-        sid, code = (student_id or "").strip().upper(), (course_code or "").strip().upper()
-        student, course = self.student_service.get(sid), self.course_service.get(code)
-        if student is None:
-            raise ValueError(f"Student {sid} not found")
-        if course is None:
-            raise ValueError(f"Course {code} not found")
-        if self.enrollments.is_duplicate(sid, code):
-            raise ValueError("Student is already enrolled in this course")
-        completed = {value.upper() for value in student.get("completed_courses", [])}
-        if code in completed:
-            raise ValueError("Student has already completed this course")
+        student_id = student_id.strip()
+        course_code = course_code.strip().upper()
 
-        # The designated graph uses prerequisite -> dependent edges. Walk that
-        # graph with the designated DFS to find every prerequisite of this course.
-        graph = self.course_service.prerequisite_graph()
-        required = {node for node in graph if node != code and code in dfs(graph, node)}
-        missing = required - completed
-        if not self.course_service.courses.meets_prerequisites(code, completed) or missing:
-            raise ValueError(f"Prerequisites not met. Missing: {', '.join(sorted(missing))}")
-        if len(self.enrollments.get_students_of_course(code)) >= course["capacity"]:
-            raise ValueError("Course is full")
-        if not self.course_service.courses.has_slot(code):
-            raise ValueError("Course is full")
-        if not self.enrollments.add_enrollment(sid, code):
-            raise ValueError("Student is already enrolled in this course")
-        if not self.course_service.courses.enroll_student(code, sid):
-            self.enrollments.remove_enrollment(sid, code)
-            raise ValueError("Course is full")
-        record = self.records.add_record(sid, code,
-                                         datetime.now().astimezone().isoformat(timespec="seconds"))
-        self._persist()
-        return record
+        student = self.student_service.get_student(student_id)
+        if not student:
+            return False, "Student not found."
+
+        course = self.course_service.get_course(course_code)
+        if not course:
+            return False, "Course not found."
+
+        if not self.course_service.has_slot(course_code):
+            return False, "Course is already full."
+
+        if self.enroll_set.is_duplicate(student_id, course_code):
+            return False, "Student is already enrolled in this course."
+
+        if not self.course_service.meets_prerequisites(
+                course_code, student["completed_courses"]):
+            missing = set(course["prerequisites"]) - set(student["completed_courses"])
+            return False, f"Missing prerequisites: {', '.join(sorted(missing))}"
+
+        ok = self.course_service.add_enrollment(course_code, student_id)
+        if not ok:
+            return False, "Failed to add enrollment."
+
+        self.enroll_set.add_enrollment(student_id, course_code)
+        self.list.add_record(student_id, course_code,
+                             datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+        self._save()
+        return True, "Enrollment successful."
 
     def drop(self, student_id, course_code):
-        sid, code = (student_id or "").strip().upper(), (course_code or "").strip().upper()
-        if not self.enrollments.remove_enrollment(sid, code):
-            raise ValueError("Enrollment not found")
-        self.course_service.courses.drop_student(code, sid)
-        self.records.records[:] = [r for r in self.records.get_all_records()
-                                   if (r["student_id"], r["course_code"]) != (sid, code)]
-        self._persist()
+        course_code = course_code.strip().upper()
+        ok = self.course_service.remove_enrollment(course_code, student_id)
+        if not ok:
+            return False, "Enrollment not found."
+        self.enroll_set.remove_enrollment(student_id, course_code)
+        self.list.records = [
+            r for r in self.list.records
+            if not (r["student_id"] == student_id and
+                    r["course_code"] == course_code)
+        ]
+        self._save()
+        return True, "Enrollment dropped."
 
-    def drop_all_for_student(self, student_id):
-        sid = (student_id or "").strip().upper()
-        codes = list(self.enrollments.get_courses_of_student(sid))
-        for code in codes:
-            self.enrollments.remove_enrollment(sid, code)
-            self.course_service.courses.drop_student(code, sid)
-        self.records.records[:] = [r for r in self.records.get_all_records() if r["student_id"] != sid]
-        if codes:
-            self._persist()
+    def get_all_records(self):
+        return self._enrich(self.list.get_all_records())
 
-    def drop_all_for_course(self, course_code):
-        code = (course_code or "").strip().upper()
-        students = list(self.enrollments.get_students_of_course(code))
-        for sid in students:
-            self.enrollments.remove_enrollment(sid, code)
-            self.course_service.courses.drop_student(code, sid)
-        self.records.records[:] = [r for r in self.records.get_all_records() if r["course_code"] != code]
-        if students:
-            self._persist()
+    def get_by_student(self, student_id):
+        return self._enrich(self.list.filter_by_student(student_id))
 
-    def count_for_course(self, course_code):
-        return len(self.enrollments.get_students_of_course((course_code or "").strip().upper()))
-
-    def for_student(self, student_id):
-        return self.records.filter_by_student((student_id or "").strip().upper())
-
-    def for_course(self, course_code):
-        return self.records.filter_by_course((course_code or "").strip().upper())
-
-    def all(self):
-        return self.records.get_all_records()
-
-    def prerequisite_dfs(self, course_code):
-        return dfs(self.course_service.prerequisite_graph(), course_code.strip().upper())
-
-    def prerequisite_bfs(self, course_code):
-        return bfs(self.course_service.prerequisite_graph(), course_code.strip().upper())
-
-    def prerequisite_levels(self, course_code):
-        return bfs_levels(self.course_service.prerequisite_graph(), course_code.strip().upper())
-
-    def prerequisite_order(self):
-        return topological_sort(self.course_service.prerequisite_graph())
-
-    def _persist(self):
-        self.storage.save("enrollments.json", self.all())
+    def get_by_course(self, course_code):
+        return self._enrich(self.list.filter_by_course(course_code.upper()))

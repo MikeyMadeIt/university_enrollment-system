@@ -1,79 +1,93 @@
-"""Student operations backed by the original StudentDictionary implementation."""
-
-from algorithms.searching import linear_search_by_id, linear_search_by_name
+from storage.json_storage import JsonStorage
+from utils.validation import validate_student_id, validate_name
 from data_structures.student_dictionary import StudentDictionary
+from algorithms.searching import linear_search_by_name, linear_search_by_id
+from algorithms.sorting import bubble_sort_by_name
 
 
 class StudentService:
-    def __init__(self, storage):
-        self.storage = storage
-        self.students = StudentDictionary()
-        for row in storage.load("students.json", []):
-            if not isinstance(row, dict):
-                continue
-            raw_sid = row.get("student_id", row.get("id"))
-            name = row.get("name", "")
-            sid = str(raw_sid).strip().upper() if raw_sid is not None else ""
-            if sid and isinstance(name, str) and name.strip() and self.students.add_student(
-                    sid, name.strip()):
-                student = self.students.get_student(sid)
-                email = row.get("email", "")
-                student["email"] = email.strip() if isinstance(email, str) else ""
-                completed = row.get("completed_courses", [])
-                if not isinstance(completed, (list, tuple, set)):
-                    completed = []
-                for code in completed:
-                    code = str(code).strip().upper()
-                    if code:
-                        self.students.add_completed_course(sid, code)
+    def __init__(self, storage=None):
+        self.storage = storage or JsonStorage()
+        self.dict = StudentDictionary()
+        self._load()
 
-    def add(self, student_id, name, email="", completed=None):
-        sid, name = (student_id or "").strip().upper(), (name or "").strip()
-        if not sid or not name:
-            raise ValueError("Student ID and name are required")
-        if not self.students.add_student(sid, name):
-            raise ValueError(f"Student ID {sid} already exists")
-        self.students.get_student(sid)["email"] = (email or "").strip()
-        for code in completed or []:
-            if code and str(code).strip():
-                self.students.add_completed_course(sid, str(code).strip().upper())
-        self._persist()
-        return self.get(sid)
+    def _load(self):
+        raw = self.storage.load_students()
+        for sid, info in raw.items():
+            self.dict.add_student(sid, info["name"])
+            for course in info.get("completed_courses", []):
+                self.dict.add_completed_course(sid, course)
 
-    def add_completed_course(self, student_id, course_code):
-        sid = (student_id or "").strip().upper()
-        code = (course_code or "").strip().upper()
-        if not sid or not code:
-            raise ValueError("Student ID and course code are required")
-        if not self.students.add_completed_course(sid, code):
-            raise ValueError(f"Student {sid} not found")
-        self._persist()
+    def _save(self):
+        raw = {}
+        for sid, info in self.dict.get_all_student().items():
+            raw[sid] = {
+                "name": info["name"],
+                "completed_courses": sorted(info["completed_courses"]),
+            }
+        self.storage.save_students(raw)
 
-    def remove(self, student_id):
-        sid = (student_id or "").strip().upper()
-        if not self.students.delete_student(sid):
-            raise ValueError(f"Student {sid} not found")
-        self._persist()
+    def reload(self):
+        self.dict = StudentDictionary()
+        self._load()
 
-    def get(self, student_id):
-        sid = (student_id or "").strip().upper()
-        row = self.students.get_student(sid)
-        if row is None:
-            return None
-        return {"student_id": sid, "name": row["name"], "email": row.get("email", ""),
-                "completed_courses": list(row["completed_courses"])}
+    def add_student(self, student_id, name):
+        student_id = student_id.strip()
+        name = name.strip()
+        if not validate_student_id(student_id):
+            return False, "Invalid student ID."
+        if not validate_name(name):
+            return False, "Invalid student name."
+        if self.dict.student_exist(student_id):
+            return False, "Student ID already exists."
+        self.dict.add_student(student_id, name)
+        self._save()
+        return True, "Student registered successfully."
 
-    def all(self):
-        return [self.get(sid) for sid in self.students.get_all_student()]
+    def delete_student(self, student_id):
+        if not self.dict.student_exist(student_id):
+            return False, "Student not found."
+        self.dict.delete_student(student_id)
+        self._save()
+        return True, "Student deleted."
 
-    def search(self, query):
-        query = (query or "").strip()
-        if not query:
-            return None
-        record = linear_search_by_id(self.students.get_all_student(), query.upper())
-        if record is not None:
-            return self.get(query)
-        return linear_search_by_name(self.all(), query)
+    def get_all_students(self):
+        return self.dict.get_all_student()
 
-    def _persist(self):
-        self.storage.save("students.json", self.all())
+    def get_student(self, student_id):
+        return self.dict.get_student(student_id)
+
+    # ---- self-implemented searching -----------------------------
+    def search_by_id(self, student_id):
+        return linear_search_by_id(self.dict.get_all_student(), student_id.strip())
+
+    def search_by_name(self, name):
+        records = [
+            {"student_id": sid, "name": info["name"]}
+            for sid, info in self.dict.get_all_student().items()
+        ]
+        record = linear_search_by_name(records, name)
+        if record is None:
+            return []
+        sid = record["student_id"]
+        return [(sid, self.dict.get_student(sid))]
+
+    def mark_completed(self, student_id, course_code):
+        if self.dict.get_student(student_id) is None:
+            return False, "Student not found."
+        self.dict.add_completed_course(student_id, course_code.upper().strip())
+        self._save()
+        return True, "Course marked as completed."
+
+    def has_completed(self, student_id, course_code):
+        return self.dict.has_completed(student_id, course_code)
+
+    # ---- self-implemented sorting ------------------------------
+    def sorted_students(self):
+        records = [
+            {"student_id": sid, "name": info["name"]}
+            for sid, info in self.dict.get_all_student().items()
+        ]
+        ordered = bubble_sort_by_name(records)
+        return [(r["student_id"], self.dict.get_student(r["student_id"]))
+                for r in ordered]

@@ -1,11 +1,14 @@
-"""Tkinter application launcher; page behavior lives in the page modules."""
-
 import tkinter as tk
+from .main_window import MainWindow
 
-from ui.main_window import MainWindow
 
-
-def run_app(student_service, course_service, enrollment_service, report_service):
+def main():
     root = tk.Tk()
-    MainWindow(root, student_service, course_service, enrollment_service, report_service)
+
+    app = MainWindow(root)
+
     root.mainloop()
+
+
+if __name__ == "__main__":
+    main()
